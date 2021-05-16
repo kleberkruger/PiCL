@@ -29,6 +29,7 @@ class FaultinjectionManager;
 class TagsManager;
 class RoutineTracer;
 class MemoryTracker;
+class EpochManager; // Added by Kleber Kruger
 namespace config { class Config; }
 
 class Simulator
@@ -106,6 +107,7 @@ private:
    FaultinjectionManager *m_faultinjection_manager;
    RoutineTracer *m_rtn_tracer;
    MemoryTracker *m_memory_tracker;
+   EpochManager *m_epoch_manager; // Added by Kleber Kruger
 
    bool m_running;
    bool m_inst_mode_output;
