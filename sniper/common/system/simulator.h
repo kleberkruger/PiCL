@@ -69,6 +69,7 @@ public:
    FaultinjectionManager *getFaultinjectionManager() { return m_faultinjection_manager; }
    TraceManager *getTraceManager() { return m_trace_manager; }
    TagsManager *getTagsManager() { return m_tags_manager; }
+   EpochManager *getEpochManager() { return m_epoch_manager; } // Added by Kleber Kruger
    RoutineTracer *getRoutineTracer() { return m_rtn_tracer; }
    MemoryTracker *getMemoryTracker() { return m_memory_tracker; }
    void setMemoryTracker(MemoryTracker *memory_tracker) { m_memory_tracker = memory_tracker; }

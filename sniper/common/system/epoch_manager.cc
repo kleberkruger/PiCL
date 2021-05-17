@@ -3,24 +3,28 @@
 #include "magic_server.h"
 #include "simulator.h"
 
-EpochManager::EpochManager() : m_eid(0)
+EpochManager::EpochManager() : m_system_eid(1)
 {
-    printf("EpochManager created!\n");
 }
 
 EpochManager::~EpochManager()
 {
-    printf("EpochManager deleted!\n");
 }
 
 void EpochManager::start()
 {
-    printf("EpochManager::start()\n");
-    Sim()->getHooksManager()->registerHook(HookType::HOOK_PERIODIC_INS, __record, (UInt64)this);
+    Sim()->getHooksManager()->registerHook(HookType::HOOK_PERIODIC_INS, __increment, (UInt64)this);
 }
 
-void EpochManager::record(UInt64 simtime)
+void EpochManager::increment(UInt64 simtime)
 {
     UInt64 progress = MagicServer::getGlobalInstructionCount();
-    printf("[EPOCH ID: %lu] - [%lu]\n", m_eid++, progress);
+    printf("[EPOCH ID: %lu] - [%lu]\n", m_system_eid, progress);
+
+    m_system_eid++;
+}
+
+UInt64 EpochManager::getGlobalSystemEID()
+{
+    return Sim()->getEpochManager()->getSystemEID();
 }

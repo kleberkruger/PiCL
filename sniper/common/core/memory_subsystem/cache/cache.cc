@@ -1,6 +1,7 @@
 #include "simulator.h"
 #include "cache.h"
 #include "log.h"
+#include "epoch_manager.h" // Added by Kleber Kruger
 
 // Cache class
 // constructors/destructors
@@ -110,6 +111,16 @@ Cache::accessSingleLine(IntPtr addr, access_t access_type,
    else
    {
       set->write_line(line_index, block_offset, buff, bytes, update_replacement);
+
+      // Added by Kleber Kruger
+      UInt64 old_eid = cache_block_info->getEpochID();
+      UInt64 new_eid = EpochManager::getGlobalSystemEID();
+      if (old_eid != new_eid)
+      {
+         cache_block_info->setEpochID(new_eid);
+         printf("Old to New EID: [%lu -> %lu]\n", old_eid, new_eid);
+         // Se estiver na L2, encaminhar para a LLC???
+      }
 
       // NOTE: assumes error occurs in memory. If we want to model bus errors, insert the error into buff instead
       if (m_fault_injector)

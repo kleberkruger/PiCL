@@ -17,6 +17,8 @@ class CacheState
          EXCLUSIVE,
          OWNED,
          MODIFIED,
+         TRANSIENT,  // Added by Kleber Kruger
+         COMMITED,   // Added by Kleber Kruger
          NUM_CSTATE_STATES,
          /* Below are special states, used only for reporting */
          INVALID_COLD = NUM_CSTATE_STATES,

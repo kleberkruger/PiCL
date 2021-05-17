@@ -60,7 +60,8 @@ class CacheBlockInfo
       bool updateUsage(UInt32 offset, UInt32 size);
       bool updateUsage(BitsUsedType used);
 
-      UInt64 getEpochID() const { return m_eid; } // Added by Kleber Kruger
+      UInt64 getEpochID() const { return m_eid; }  // Added by Kleber Kruger
+      void setEpochID(UInt64 eid) { m_eid = eid; } // Added by Kleber Kruger
 
       static const char* getOptionName(option_t option);
 };

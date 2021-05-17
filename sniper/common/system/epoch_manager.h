@@ -11,15 +11,21 @@ public:
 
     void start();
 
+    UInt64 getSystemEID() const { return m_system_eid; }
+    UInt64 getPersistedEID() const { return 0; }
+    UInt64 getTaggedEID() const { return 0; }
+
+    static UInt64 getGlobalSystemEID();
+
 private:
-    static SInt64 __record(UInt64 arg, UInt64 val)
+    static SInt64 __increment(UInt64 arg, UInt64 val)
     {
-        ((EpochManager *)arg)->record(val);
+        ((EpochManager *)arg)->increment(val);
         return 0;
     }
-    void record(UInt64 time);
+    void increment(UInt64 time);
 
-    UInt64 m_eid;
+    UInt64 m_system_eid;
 };
 
 #endif
