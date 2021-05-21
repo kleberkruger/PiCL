@@ -113,13 +113,17 @@ Cache::accessSingleLine(IntPtr addr, access_t access_type,
       set->write_line(line_index, block_offset, buff, bytes, update_replacement);
 
       // Added by Kleber Kruger
-      UInt64 old_eid = cache_block_info->getEpochID();
-      UInt64 new_eid = EpochManager::getGlobalSystemEID();
-      if (old_eid != new_eid)
+      // Maybe change this epoch by an epochID received by argument of this method.
+      // So, it's possible to guarantee that the block modified in L1 has been propagated.
+      if (cache_block_info->getEpochID() != EpochManager::getGlobalSystemEID())
       {
-         cache_block_info->setEpochID(new_eid);
-         printf("Old to New EID: [%lu -> %lu]\n", old_eid, new_eid);
-         // Se estiver na L2, encaminhar para a LLC???
+         cache_block_info->setEpochID(EpochManager::getGlobalSystemEID());
+         
+         // onchip_undo_buffer.createUndoEntry(cache_block_info);
+         // // Bloco sempre está modificado quando chega aqui
+         // printf("cache.cc | accessSingleLine: [%s]\n", getName().c_str());
+         // // printf("Old to New EID: [%lu -> %lu]\n", old_eid, new_eid);
+         // // Se estiver na L2, encaminhar para a LLC???
       }
 
       // NOTE: assumes error occurs in memory. If we want to model bus errors, insert the error into buff instead

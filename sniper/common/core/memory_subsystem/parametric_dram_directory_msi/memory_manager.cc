@@ -12,6 +12,7 @@
 #include "config.hpp"
 #include "distribution.h"
 #include "topology_info.h"
+#include "onchip_undo_buffer_cntlr.h" // Added by Kleber Kruger
 
 #include <algorithm>
 
@@ -290,6 +291,8 @@ MemoryManager::MemoryManager(Core* core,
       );
       m_cache_cntlrs[(MemComponent::component_t)i] = cache_cntlr;
       setCacheCntlrAt(getCore()->getId(), (MemComponent::component_t)i, cache_cntlr);
+      
+      m_onchip_undo_buffer_cntlr = new OnChipUndoBufferCntlr(this); // Added by Kleber Kruger
    }
 
    m_cache_cntlrs[MemComponent::L1_ICACHE]->setNextCacheCntlr(m_cache_cntlrs[MemComponent::L2_CACHE]);
@@ -403,6 +406,8 @@ MemoryManager::~MemoryManager()
       delete m_cache_cntlrs[(MemComponent::component_t)i];
       m_cache_cntlrs[(MemComponent::component_t)i] = NULL;
    }
+
+   delete m_onchip_undo_buffer_cntlr; // Added by Kleber Kruger
 
    if (m_nuca_cache)
       delete m_nuca_cache;

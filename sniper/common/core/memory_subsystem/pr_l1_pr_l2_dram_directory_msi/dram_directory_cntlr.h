@@ -68,6 +68,9 @@ namespace PrL1PrL2DramDirectoryMSI
             shmem_msg->getPerf()->updateTime(getShmemPerfModel()->getElapsedTime(ShmemPerfModel::_SIM_THREAD), reason);
          }
 
+         // NVM Chechpoint Support
+         void processCpRepFromL2Cache(core_id_t sender, ShmemMsg *shmem_msg); // Added by Kleber Kruger
+
       public:
          DramDirectoryCntlr(core_id_t core_id,
                MemoryManagerBase* memory_manager,

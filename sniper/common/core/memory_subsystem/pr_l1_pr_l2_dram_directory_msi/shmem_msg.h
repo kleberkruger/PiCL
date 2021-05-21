@@ -30,13 +30,18 @@ namespace PrL1PrL2DramDirectoryMSI
             FLUSH_REP,
             WB_REP,
             NULLIFY_REQ,
+
+            // NVM Checkpoint Support (Added by Kleber Kruger)
+            CP_REP,
+
             // Tag directory > DRAM
             DRAM_READ_REQ,
             DRAM_WRITE_REQ,
             // DRAM > tag directory
             DRAM_READ_REP,
 
-            MAX_MSG_TYPE = NULLIFY_REQ,
+            // MAX_MSG_TYPE = NULLIFY_REQ,
+            MAX_MSG_TYPE = CP_REP, // Modified by Kleber Kruger
             NUM_MSG_TYPES = MAX_MSG_TYPE - MIN_MSG_TYPE + 1
          };
 

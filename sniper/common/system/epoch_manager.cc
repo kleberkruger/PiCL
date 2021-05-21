@@ -18,9 +18,7 @@ void EpochManager::start()
 
 void EpochManager::increment(UInt64 simtime)
 {
-    UInt64 progress = MagicServer::getGlobalInstructionCount();
-    printf("[EPOCH ID: %lu] - [%lu]\n", m_system_eid, progress);
-
+    // printf("[EPOCH ID: %lu] - [%lu]\n", m_system_eid, MagicServer::getGlobalInstructionCount());
     m_system_eid++;
 }
 

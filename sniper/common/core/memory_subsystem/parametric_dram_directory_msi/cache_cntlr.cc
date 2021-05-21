@@ -8,6 +8,7 @@
 #include "hooks_manager.h"
 #include "cache_atd.h"
 #include "shmem_perf.h"
+#include "epoch_manager.h" // Added by Kleber Kruger
 
 #include <cstring>
 
@@ -1285,7 +1286,11 @@ CacheCntlr::operationPermissibleinCache(
    return cache_hit;
 }
 
-
+/**
+ * Method called by core on first-level cache (L1-D) after the block is present in the cache.
+ * 
+ * Note by Kleber Kruger
+ */
 void
 CacheCntlr::accessCache(
       Core::mem_op_t mem_op_type, IntPtr ca_address, UInt32 offset,
@@ -1302,6 +1307,25 @@ CacheCntlr::accessCache(
       case Core::WRITE:
          m_master->m_cache->accessSingleLine(ca_address + offset, Cache::STORE, data_buf, data_length,
                                              getShmemPerfModel()->getElapsedTime(ShmemPerfModel::_USER_THREAD), update_replacement);
+         // {
+         //    CacheBlockInfo *cache_block = getCacheBlockInfo(ca_address + offset);
+         //    UInt64 old_eid = cache_block->getEpochID();
+         //    UInt64 new_eid = EpochManager::getGlobalSystemEID();
+         //    if (old_eid != new_eid)
+         //    {
+         //       cache_block->setEpochID(new_eid);
+         //       IntPtr address = m_master->m_cache->tagToAddress(cache_block->getTag());
+         //       Byte data_buf[getCacheBlockSize()];
+         //       // updateCacheBlock(address, CacheState::SHARED, Transition::COHERENCY, data_buf, ShmemPerfModel::_SIM_THREAD);
+         //       printf("[%lu] -> [%lu]\n", old_eid, new_eid);
+         //       // getMemoryManager()->sendMsg(PrL1PrL2DramDirectoryMSI::ShmemMsg::CP_REP,
+         //       //                            MemComponent::LAST_LEVEL_CACHE, MemComponent::TAG_DIR,
+         //       //                            m_core_id_master, getHome(address), /* requester and receiver */
+         //       //                            address, data_buf, getCacheBlockSize(),
+         //       //                            HitWhere::UNKNOWN, &m_dummy_shmem_perf, ShmemPerfModel::_SIM_THREAD);
+         //    }
+         // }
+
          // Write-through cache - Write the next level cache also
          if (m_cache_writethrough) {
             LOG_ASSERT_ERROR(m_next_cache_cntlr, "Writethrough enabled on last-level cache !?");
@@ -1714,6 +1738,14 @@ CacheCntlr::updateCacheBlock(IntPtr address, CacheState::cstate_t new_cstate, Tr
    return std::pair<SubsecondTime, bool>(latency, sibling_hit);
 }
 
+/**
+ * Method invoked to write a dirty block to next level cache.
+ * In PiCL, this method is invoked when L1 does writethrough from a dirty block to L2.
+ * 
+ * Maybe to pass epoch ID as a parameter to accessSingleLine...
+ * 
+ * Note by Kleber Kruger
+ */
 void
 CacheCntlr::writeCacheBlock(IntPtr address, UInt32 offset, Byte* data_buf, UInt32 data_length, ShmemPerfModel::Thread_t thread_num)
 {
@@ -1728,6 +1760,8 @@ assert(data_length==getCacheBlockSize());
       if (data_buf)
          memcpy(m_master->m_evicting_buf + offset, data_buf, data_length);
    } else {
+      // printf("[cache_cntlr.cc | writeCacheBlock]: [%s]\n", m_master->m_cache->getName().c_str());
+
       __attribute__((unused)) SharedCacheBlockInfo* cache_block_info = (SharedCacheBlockInfo*) m_master->m_cache->accessSingleLine(
          address + offset, Cache::STORE, data_buf, data_length, getShmemPerfModel()->getElapsedTime(thread_num), false);
       LOG_ASSERT_ERROR(cache_block_info, "writethrough expected a hit at next-level cache but got miss");

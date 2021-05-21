@@ -87,6 +87,7 @@ DramCache::getDataFromDram(IntPtr address, core_id_t requester, Byte* data_buf, 
 boost::tuple<SubsecondTime, HitWhere::where_t>
 DramCache::putDataToDram(IntPtr address, core_id_t requester, Byte* data_buf, SubsecondTime now)
 {
+   // printf("[dram_cache.cc | putDataToDram]: [%s]\n", m_cache->getName().c_str()); // Added by Kleber Kruger
    std::pair<bool, SubsecondTime> res = doAccess(Cache::STORE, address, requester, data_buf, now, NULL);
 
    if (!res.first)
@@ -125,6 +126,7 @@ DramCache::doAccess(Cache::access_t access, IntPtr address, core_id_t requester,
          }
       }
 
+      // printf("[dram_cache.cc | doAccess]: [%s]\n", m_cache->getName().c_str()); // Added by Kleber Kruger
       m_cache->accessSingleLine(address, access, data_buf, m_cache_block_size, now + latency, true);
 
       latency += accessDataArray(access, requester, now + latency, perf);
@@ -171,6 +173,7 @@ DramCache::insertLine(Cache::access_t access, IntPtr address, core_id_t requeste
    // Writeback to DRAM done off-line, so don't affect return latency
    if (eviction && evict_block_info.getCState() == CacheState::MODIFIED)
    {
+      // printf("[dram_cache.cc | insertLine]: [%s]\n", m_cache->getName().c_str()); // Added by Kleber Kruger
       m_dram_cntlr->putDataToDram(evict_address, requester, data_buf, now);
    }
 }
