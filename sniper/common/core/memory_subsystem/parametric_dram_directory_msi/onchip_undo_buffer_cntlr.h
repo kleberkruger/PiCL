@@ -32,6 +32,8 @@ namespace ParametricDramDirectoryMSI
 
       virtual ~OnChipUndoBufferCntlr();
 
+      OnChipUndoBuffer *getOnChipUndoBuffer() { return m_onchip_undo_buffer; }
+
    private:
       // MemComponent::component_t mem_component
       // String name,

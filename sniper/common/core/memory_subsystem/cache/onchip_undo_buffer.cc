@@ -8,8 +8,9 @@ OnChipUndoBuffer::OnChipUndoBuffer(UInt16 num_entries) : m_num_entries(num_entri
 
 OnChipUndoBuffer::~OnChipUndoBuffer() {}
 
-bool createUndoEntry(CacheBlockInfo *cache_block_info)
+bool OnChipUndoBuffer::createUndoEntry(CacheBlockInfo *cache_block_info)
 {
+   printf("Criando entrada para o endereco: [%lu]\n", cache_block_info->getTag());
    return true;
 }
 

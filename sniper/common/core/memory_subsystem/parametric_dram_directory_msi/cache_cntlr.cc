@@ -1306,8 +1306,21 @@ CacheCntlr::accessCache(
          break;
 
       case Core::WRITE:
-         m_master->m_cache->accessSingleLine(ca_address + offset, Cache::STORE, data_buf, data_length,
-                                             getShmemPerfModel()->getElapsedTime(ShmemPerfModel::_USER_THREAD), update_replacement);
+         // m_master->m_cache->accessSingleLine(ca_address + offset, Cache::STORE, data_buf, data_length,
+         //                                     getShmemPerfModel()->getElapsedTime(ShmemPerfModel::_USER_THREAD), update_replacement);
+         {
+            CacheBlockInfo *cache_block_info = m_master->m_cache->accessSingleLine(ca_address + offset, Cache::STORE, data_buf, data_length,
+                                                getShmemPerfModel()->getElapsedTime(ShmemPerfModel::_USER_THREAD), update_replacement);
+
+            if (cache_block_info->getEpochID() != EpochManager::getGlobalSystemEID())
+            {
+               cache_block_info->setEpochID(EpochManager::getGlobalSystemEID());
+               // Verificar se a L3 possui OnChipUndoBufferCtrl
+               // printf("OnChipUndoBufferCtrl de %s = [%lu]\n", m_master->m_cache->getName().c_str(), (UInt64) m_onchip_undo_buffer_cntlr);
+               m_onchip_undo_buffer_cntlr->getOnChipUndoBuffer()->createUndoEntry(cache_block_info);
+            }
+         }
+
          // {
          //    CacheBlockInfo *cache_block = getCacheBlockInfo(ca_address + offset);
          //    UInt64 old_eid = cache_block->getEpochID();
@@ -1317,8 +1330,6 @@ CacheCntlr::accessCache(
          //       cache_block->setEpochID(new_eid);
          //       IntPtr address = m_master->m_cache->tagToAddress(cache_block->getTag());
          //       Byte data_buf[getCacheBlockSize()];
-         //       // updateCacheBlock(address, CacheState::SHARED, Transition::COHERENCY, data_buf, ShmemPerfModel::_SIM_THREAD);
-         //       printf("[%lu] -> [%lu]\n", old_eid, new_eid);
          //       // getMemoryManager()->sendMsg(PrL1PrL2DramDirectoryMSI::ShmemMsg::CP_REP,
          //       //                            MemComponent::LAST_LEVEL_CACHE, MemComponent::TAG_DIR,
          //       //                            m_core_id_master, getHome(address), /* requester and receiver */

@@ -373,7 +373,7 @@ namespace ParametricDramDirectoryMSI
 
          void setPrevCacheCntlrs(CacheCntlrList& prev_cache_cntlrs);
          void setNextCacheCntlr(CacheCntlr* next_cache_cntlr) { m_next_cache_cntlr = next_cache_cntlr; }
-         void setOnChipUndoBufferCntlr(OnChipUndoBufferCntlr *onchip_undo_buffer_cntlr) { onchip_undo_buffer_cntlr = onchip_undo_buffer_cntlr; } // Added by Kleber Kruger
+         void setOnChipUndoBufferCntlr(OnChipUndoBufferCntlr *undo_buffer_cntlr) { m_onchip_undo_buffer_cntlr = undo_buffer_cntlr; } // Added by Kleber Kruger
          void createSetLocks(UInt32 cache_block_size, UInt32 num_sets, UInt32 core_offset, UInt32 num_cores) { m_master->createSetLocks(cache_block_size, num_sets, core_offset, num_cores); }
          void setDRAMDirectAccess(DramCntlrInterface* dram_cntlr, UInt64 num_outstanding);
 

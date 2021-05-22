@@ -17,8 +17,6 @@ namespace ParametricDramDirectoryMSI
                                                 ShmemPerfModel *shmem_perf_model,
                                                 UInt8 acs_gap) : m_core_id(core_id), m_memory_manager(memory_manager), m_cache_block_size(cache_block_size), m_acs_gap(acs_gap)
    {
-      printf("CRIADO OnChipUndoBufferCntlr: %lu\n", (UInt64)this);
-
       m_onchip_undo_buffer = new OnChipUndoBuffer();
       Sim()->getHooksManager()->registerHook(HookType::HOOK_PERIODIC_INS, __acs, (UInt64)this);
    }
