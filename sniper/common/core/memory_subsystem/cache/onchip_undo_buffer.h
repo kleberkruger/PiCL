@@ -48,6 +48,8 @@ public:
 
    bool createUndoEntry(CacheBlockInfo *cache_block_info);
 
+   std::queue<CacheBlockInfo *> getOldEntries(UInt64 acs_eid);
+
    const UInt16 &getNumEntries() const { return m_num_entries; }
 };
 

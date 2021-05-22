@@ -291,9 +291,18 @@ MemoryManager::MemoryManager(Core* core,
       );
       m_cache_cntlrs[(MemComponent::component_t)i] = cache_cntlr;
       setCacheCntlrAt(getCore()->getId(), (MemComponent::component_t)i, cache_cntlr);
-      
-      m_onchip_undo_buffer_cntlr = new OnChipUndoBufferCntlr(this); // Added by Kleber Kruger
    }
+
+   // m_onchip_undo_buffer_cntlr = new OnChipUndoBufferCntlr(this); // Added by Kleber Kruger
+   m_onchip_undo_buffer_cntlr = new OnChipUndoBufferCntlr(
+         getCore()->getId(),
+         this,
+         m_tag_directory_home_lookup,
+         m_user_thread_sem,
+         m_network_thread_sem,
+         getCacheBlockSize(),
+         getShmemPerfModel()
+      );
 
    m_cache_cntlrs[MemComponent::L1_ICACHE]->setNextCacheCntlr(m_cache_cntlrs[MemComponent::L2_CACHE]);
    m_cache_cntlrs[MemComponent::L1_DCACHE]->setNextCacheCntlr(m_cache_cntlrs[MemComponent::L2_CACHE]);
@@ -310,6 +319,12 @@ MemoryManager::MemoryManager(Core* core,
       prev_cache_cntlrs.push_back(m_cache_cntlrs[(MemComponent::component_t)i]);
       m_cache_cntlrs[(MemComponent::component_t)(i + 1)]->setPrevCacheCntlrs(prev_cache_cntlrs);
    }
+
+   // Set OnChipUndoBufferCntlr to CacheCntlrs (Added by Kleber Kruger)
+   m_cache_cntlrs[MemComponent::L1_ICACHE]->setOnChipUndoBufferCntlr(m_onchip_undo_buffer_cntlr);
+   m_cache_cntlrs[MemComponent::L1_DCACHE]->setOnChipUndoBufferCntlr(m_onchip_undo_buffer_cntlr);
+   for (UInt32 i = MemComponent::L2_CACHE; i <= (UInt32)m_last_level_cache - 1; ++i)
+      m_cache_cntlrs[(MemComponent::component_t)i]->setOnChipUndoBufferCntlr(m_onchip_undo_buffer_cntlr);
 
    // Create Performance Models
    for(UInt32 i = MemComponent::FIRST_LEVEL_CACHE; i <= (UInt32)m_last_level_cache; ++i)
@@ -338,6 +353,8 @@ MemoryManager::MemoryManager(Core* core,
 
    // The core id to use when sending messages to the directory (master node of the last-level cache)
    m_core_id_master = getCore()->getId() - getCore()->getId() % cache_parameters[m_last_level_cache].shared_cores;
+
+   // Kleber Kruger (mover new OnChipUndoBuffer para cá passando m_core_id_master)
 
    if (m_core_id_master == getCore()->getId())
    {

@@ -1,9 +1,25 @@
 #include "onchip_undo_buffer.h"
 
-OnChipUndoBuffer::OnChipUndoBuffer(UInt16 num_entries) : m_num_entries(num_entries), m_buffer(num_entries)
+UndoEntry::UndoEntry(CacheBlockInfo *cache_block_info) {}
+
+UndoEntry::~UndoEntry() {}
+
+OnChipUndoBuffer::OnChipUndoBuffer(UInt16 num_entries) : m_num_entries(num_entries), m_buffer(num_entries) {}
+
+OnChipUndoBuffer::~OnChipUndoBuffer() {}
+
+bool createUndoEntry(CacheBlockInfo *cache_block_info)
 {
+   return true;
 }
 
-OnChipUndoBuffer::~OnChipUndoBuffer()
+std::queue<CacheBlockInfo *> OnChipUndoBuffer::getOldEntries(UInt64 acs_eid)
 {
+   std::queue<CacheBlockInfo *> old_entries;
+   while (!m_buffer.empty())
+   {
+      auto undo_entry = m_buffer.front();
+      m_buffer.pop();
+   }
+   return old_entries;
 }

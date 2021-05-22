@@ -136,6 +136,7 @@ CacheCntlr::CacheCntlr(MemComponent::component_t mem_component,
    m_memory_manager(memory_manager),
    m_next_cache_cntlr(NULL),
    m_last_level(NULL),
+   m_onchip_undo_buffer_cntlr(NULL), // Added by Kleber Kruger
    m_tag_directory_home_lookup(tag_directory_home_lookup),
    m_perfect(cache_params.perfect),
    m_passthrough(Sim()->getCfg()->getBoolArray("perf_model/" + cache_params.configName + "/passthrough", core_id)),

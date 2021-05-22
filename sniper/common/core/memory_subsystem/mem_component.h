@@ -20,6 +20,7 @@ class MemComponent
          */
          LAST_LEVEL_CACHE = 20,
          TAG_DIR,
+         ONCHIP_UNDO_BUFFER, // Added by Kleber Kruger
          NUCA_CACHE,
          DRAM_CACHE,
          DRAM,

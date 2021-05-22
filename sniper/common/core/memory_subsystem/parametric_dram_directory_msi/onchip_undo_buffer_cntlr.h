@@ -2,6 +2,9 @@
 #define ONCHIP_UNDO_BUFFER_CNTLR_H
 
 #include "onchip_undo_buffer.h"
+#include "semaphore.h"
+#include "shmem_perf.h"
+#include "shmem_perf_model.h"
 
 // Forward declarations
 namespace ParametricDramDirectoryMSI
@@ -16,11 +19,26 @@ namespace ParametricDramDirectoryMSI
    class OnChipUndoBufferCntlr
    {
    public:
-      OnChipUndoBufferCntlr(MemoryManager *memory_manager, UInt8 acs_gap = 3);
+      // OnChipUndoBufferCntlr(MemoryManager *memory_manager, UInt8 acs_gap = 3);
+      OnChipUndoBufferCntlr(
+          core_id_t core_id,
+          MemoryManager *memory_manager,
+          AddressHomeLookup *tag_directory_home_lookup,
+          Semaphore *user_thread_sem,
+          Semaphore *network_thread_sem,
+          UInt32 cache_block_size,
+          ShmemPerfModel *shmem_perf_model,
+          UInt8 acs_gap = 3);
+
       virtual ~OnChipUndoBufferCntlr();
 
    private:
+      // MemComponent::component_t mem_component
+      // String name,
+      core_id_t m_core_id;
       MemoryManager *m_memory_manager;
+      UInt32 m_cache_block_size;
+      ShmemPerf m_dummy_shmem_perf;
       OnChipUndoBuffer *m_onchip_undo_buffer;
       UInt8 m_acs_gap;
 
@@ -31,9 +49,10 @@ namespace ParametricDramDirectoryMSI
       }
       void acs(UInt64 eid);
 
-      void sendDataToNVM();
+      void sendDataToNVM(CacheBlockInfo *cache_block_info);
 
       MemoryManager *getMemoryManager() { return m_memory_manager; }
+      UInt32 getCacheBlockSize() { return m_cache_block_size; }
    };
 
 }
