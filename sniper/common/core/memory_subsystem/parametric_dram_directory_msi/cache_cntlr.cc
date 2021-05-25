@@ -1306,38 +1306,8 @@ CacheCntlr::accessCache(
          break;
 
       case Core::WRITE:
-         // m_master->m_cache->accessSingleLine(ca_address + offset, Cache::STORE, data_buf, data_length,
-         //                                     getShmemPerfModel()->getElapsedTime(ShmemPerfModel::_USER_THREAD), update_replacement);
-         {
-            CacheBlockInfo *cache_block_info = m_master->m_cache->accessSingleLine(ca_address + offset, Cache::STORE, data_buf, data_length,
-                                                getShmemPerfModel()->getElapsedTime(ShmemPerfModel::_USER_THREAD), update_replacement);
-
-            if (cache_block_info->getEpochID() != EpochManager::getGlobalSystemEID())
-            {
-               cache_block_info->setEpochID(EpochManager::getGlobalSystemEID());
-               // Verificar se a L3 possui OnChipUndoBufferCtrl
-               // printf("OnChipUndoBufferCtrl de %s = [%lu]\n", m_master->m_cache->getName().c_str(), (UInt64) m_onchip_undo_buffer_cntlr);
-               m_onchip_undo_buffer_cntlr->getOnChipUndoBuffer()->createUndoEntry(cache_block_info);
-            }
-         }
-
-         // {
-         //    CacheBlockInfo *cache_block = getCacheBlockInfo(ca_address + offset);
-         //    UInt64 old_eid = cache_block->getEpochID();
-         //    UInt64 new_eid = EpochManager::getGlobalSystemEID();
-         //    if (old_eid != new_eid)
-         //    {
-         //       cache_block->setEpochID(new_eid);
-         //       IntPtr address = m_master->m_cache->tagToAddress(cache_block->getTag());
-         //       Byte data_buf[getCacheBlockSize()];
-         //       // getMemoryManager()->sendMsg(PrL1PrL2DramDirectoryMSI::ShmemMsg::CP_REP,
-         //       //                            MemComponent::LAST_LEVEL_CACHE, MemComponent::TAG_DIR,
-         //       //                            m_core_id_master, getHome(address), /* requester and receiver */
-         //       //                            address, data_buf, getCacheBlockSize(),
-         //       //                            HitWhere::UNKNOWN, &m_dummy_shmem_perf, ShmemPerfModel::_SIM_THREAD);
-         //    }
-         // }
-
+         m_master->m_cache->accessSingleLine(ca_address + offset, Cache::STORE, data_buf, data_length,
+                                             getShmemPerfModel()->getElapsedTime(ShmemPerfModel::_USER_THREAD), update_replacement);
          // Write-through cache - Write the next level cache also
          if (m_cache_writethrough) {
             LOG_ASSERT_ERROR(m_next_cache_cntlr, "Writethrough enabled on last-level cache !?");
@@ -1772,12 +1742,20 @@ assert(data_length==getCacheBlockSize());
       if (data_buf)
          memcpy(m_master->m_evicting_buf + offset, data_buf, data_length);
    } else {
-      // printf("[cache_cntlr.cc | writeCacheBlock]: [%s]\n", m_master->m_cache->getName().c_str());
-
       __attribute__((unused)) SharedCacheBlockInfo* cache_block_info = (SharedCacheBlockInfo*) m_master->m_cache->accessSingleLine(
          address + offset, Cache::STORE, data_buf, data_length, getShmemPerfModel()->getElapsedTime(thread_num), false);
       LOG_ASSERT_ERROR(cache_block_info, "writethrough expected a hit at next-level cache but got miss");
       LOG_ASSERT_ERROR(cache_block_info->getCState() == CacheState::MODIFIED, "Got writeback for non-MODIFIED line");
+
+      // Added by Kleber Kruger
+      if (m_master->m_cache->getName().compare("L3") == 0) 
+      {
+         if (cache_block_info->getEpochID() != EpochManager::getGlobalSystemEID())
+         {
+            cache_block_info->setEpochID(EpochManager::getGlobalSystemEID());
+            m_onchip_undo_buffer_cntlr->getOnChipUndoBuffer()->createUndoEntry(cache_block_info);
+         }
+      }
    }
 
    if (m_cache_writethrough) {

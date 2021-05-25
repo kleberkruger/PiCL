@@ -321,9 +321,7 @@ MemoryManager::MemoryManager(Core* core,
    }
 
    // Set OnChipUndoBufferCntlr to CacheCntlrs (Added by Kleber Kruger)
-   m_cache_cntlrs[MemComponent::L1_ICACHE]->setOnChipUndoBufferCntlr(m_onchip_undo_buffer_cntlr);
-   m_cache_cntlrs[MemComponent::L1_DCACHE]->setOnChipUndoBufferCntlr(m_onchip_undo_buffer_cntlr);
-   for (UInt32 i = MemComponent::L2_CACHE; i <= (UInt32)m_last_level_cache - 1; ++i)
+   for (UInt32 i = MemComponent::FIRST_LEVEL_CACHE; i <= (UInt32)m_last_level_cache; ++i)
       m_cache_cntlrs[(MemComponent::component_t)i]->setOnChipUndoBufferCntlr(m_onchip_undo_buffer_cntlr);
 
    // Create Performance Models

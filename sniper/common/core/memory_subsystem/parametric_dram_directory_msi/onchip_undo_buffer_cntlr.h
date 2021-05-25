@@ -43,6 +43,9 @@ namespace ParametricDramDirectoryMSI
       ShmemPerf m_dummy_shmem_perf;
       OnChipUndoBuffer *m_onchip_undo_buffer;
       UInt8 m_acs_gap;
+      
+      UInt64 m_total_dram_writes;
+      float m_dram_rate;
 
       static SInt64 __acs(UInt64 arg, UInt64 val)
       {
@@ -50,6 +53,13 @@ namespace ParametricDramDirectoryMSI
          return 0;
       }
       void acs(UInt64 eid);
+
+      static SInt64 __print(UInt64 arg, UInt64 val)
+      {
+         ((OnChipUndoBufferCntlr *)arg)->print(val);
+         return 0;
+      }
+      void print(UInt64 eid);
 
       void sendDataToNVM(CacheBlockInfo *cache_block_info);
 

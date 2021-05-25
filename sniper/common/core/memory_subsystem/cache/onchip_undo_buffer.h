@@ -29,8 +29,10 @@ private:
 
       void push(const T &value)
       {
-         if (this->size() == m_maxlen)
-            this->c.pop_front();
+         // if (this->size() == m_maxlen)
+         //    this->c.pop_front();
+         if (m_maxlen != 0 && m_maxlen < this->size())
+            throw "On-chip undo buffer limit exceeded";
 
          std::queue<T, Container>::push(value);
       }
@@ -39,11 +41,12 @@ private:
    };
 
    const UInt16 m_num_entries;
+   UInt64 m_num_writes;
    FixedQueue<UndoEntry> m_buffer;
 
 public:
 
-   OnChipUndoBuffer(UInt16 num_entries = 32);
+   OnChipUndoBuffer(UInt16 num_entries = 0);
    virtual ~OnChipUndoBuffer();
 
    bool createUndoEntry(CacheBlockInfo *cache_block_info);
@@ -51,6 +54,8 @@ public:
    std::queue<CacheBlockInfo *> getOldEntries(UInt64 acs_eid);
 
    const UInt16 &getNumEntries() const { return m_num_entries; }
+
+   const UInt64 &getNumWrites() const { return m_num_writes; }
 };
 
 #endif /* ONCHIP_UNDO_BUFFER_H */
