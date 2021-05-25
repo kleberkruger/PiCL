@@ -35,17 +35,21 @@ namespace ParametricDramDirectoryMSI
       OnChipUndoBuffer *getOnChipUndoBuffer() { return m_onchip_undo_buffer; }
 
    private:
-      // MemComponent::component_t mem_component
-      // String name,
+      
+      struct
+      {
+         UInt64 log_writes;  
+         UInt64 total_writes;
+         UInt64 avg_log_writes_by_epoch;
+         UInt64 overhead_rate;
+      } stats;
+
       core_id_t m_core_id;
       MemoryManager *m_memory_manager;
       UInt32 m_cache_block_size;
       ShmemPerf m_dummy_shmem_perf;
       OnChipUndoBuffer *m_onchip_undo_buffer;
       UInt8 m_acs_gap;
-      
-      UInt64 m_total_dram_writes;
-      float m_dram_rate;
 
       static SInt64 __acs(UInt64 arg, UInt64 val)
       {
@@ -61,12 +65,18 @@ namespace ParametricDramDirectoryMSI
       }
       void print(UInt64 eid);
 
-      void sendDataToNVM(CacheBlockInfo *cache_block_info);
+      void sendDataToNVM(const UndoEntry &undo_entry);
 
       MemoryManager *getMemoryManager() { return m_memory_manager; }
       UInt32 getCacheBlockSize() { return m_cache_block_size; }
    };
 
 }
+
+// Números do gcc:
+// Baseline: 1450001
+// Extras:   1495619
+// PiCL:     2945620
+// Taxa:     2,03%
 
 #endif /* ONCHIP_UNDO_BUFFER_CNTLR_H */

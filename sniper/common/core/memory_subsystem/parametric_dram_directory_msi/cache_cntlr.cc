@@ -1752,8 +1752,9 @@ assert(data_length==getCacheBlockSize());
       {
          if (cache_block_info->getEpochID() != EpochManager::getGlobalSystemEID())
          {
+            UInt64 system_eid = EpochManager::getGlobalSystemEID();
+            m_onchip_undo_buffer_cntlr->getOnChipUndoBuffer()->createUndoEntry(system_eid, cache_block_info);
             cache_block_info->setEpochID(EpochManager::getGlobalSystemEID());
-            m_onchip_undo_buffer_cntlr->getOnChipUndoBuffer()->createUndoEntry(cache_block_info);
          }
       }
    }
