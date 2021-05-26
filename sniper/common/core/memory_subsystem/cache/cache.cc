@@ -2,6 +2,7 @@
 #include "cache.h"
 #include "log.h"
 #include "epoch_manager.h" // Added by Kleber Kruger
+#include "cache_cntlr.h"   // Added by Kleber Kruger
 
 // Cache class
 // constructors/destructors
@@ -190,4 +191,60 @@ Cache::updateHits(Core::mem_op_t mem_op_type, UInt64 hits)
       m_num_accesses += hits;
       m_num_hits += hits;
    }
+}
+
+/**
+ * Convert cache state to string.
+ * 
+ * Added by Kleber Kruger
+ * Method from cache_cntlr.cc
+ */
+char CStateString(CacheState::cstate_t cstate) {
+   switch(cstate)
+   {
+      case CacheState::INVALID:           return 'I';
+      case CacheState::SHARED:            return 'S';
+      case CacheState::SHARED_UPGRADING:  return 'u';
+      case CacheState::MODIFIED:          return 'M';
+      case CacheState::EXCLUSIVE:         return 'E';
+      case CacheState::OWNED:             return 'O';
+      case CacheState::INVALID_COLD:      return '_';
+      case CacheState::INVALID_EVICT:     return 'e';
+      case CacheState::INVALID_COHERENCY: return 'c';
+      default:                            return '?';
+   }
+}
+
+void
+Cache::print()
+{
+   // printf("Cache %s\n--------------------------------------------------\n     ", m_name.c_str());
+   // for (UInt32 j = 0; j < m_associativity; j++)
+   //    printf("%2d  ", j);
+   // printf("\n--------------------------------------------------\n");
+
+   // for (UInt32 i = 0; i < m_num_sets; i++)
+   // {
+   //    printf("%4d ", i);
+   //    for (UInt32 j = 0; j < m_associativity; j++)
+   //    {
+   //       CacheBlockInfo *cache_block_info = peekBlock(i, j);
+   //       printf("[%3lu] ", cache_block_info->getEpochID());
+   //    }
+   //    printf("\n");
+   // }
+   // printf("\n\n");
+   printf("============================================================\n");
+   printf("CACHE %s\n", m_name.c_str());
+   printf("------------------------------------------------------------\n");
+   for (UInt32 i = 0; i < m_num_sets; i++)
+   {
+      for (UInt32 j = 0; j < m_associativity; j++)
+      {
+         CacheBlockInfo *cache_block_info = peekBlock(i, j);
+         printf("[%2lu:%c] ", cache_block_info->getEpochID(), CStateString(cache_block_info->getCState()));
+      }
+      printf("\n");
+   }
+   printf("============================================================\n");
 }

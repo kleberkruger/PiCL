@@ -27,7 +27,7 @@ CacheBlockInfo::CacheBlockInfo(IntPtr tag, CacheState::cstate_t cstate, UInt64 o
    m_owner(0),
    m_used(0),
    m_options(options),
-   m_eid(0)
+   m_eid(0) // Added by Kleber Kruger
 {}
 
 CacheBlockInfo::~CacheBlockInfo()
@@ -58,7 +58,7 @@ CacheBlockInfo::invalidate()
 {
    m_tag = ~0;
    m_cstate = CacheState::INVALID;
-   m_eid = 0;
+   m_eid = 0; // Added by Kleber Kruger
 }
 
 void
@@ -69,7 +69,7 @@ CacheBlockInfo::clone(CacheBlockInfo* cache_block_info)
    m_owner = cache_block_info->m_owner;
    m_used = cache_block_info->m_used;
    m_options = cache_block_info->m_options;
-   m_eid = cache_block_info->getEpochID();
+   m_eid = cache_block_info->getEpochID(); // Added by Kleber Kruger
 }
 
 bool

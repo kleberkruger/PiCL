@@ -68,6 +68,8 @@ class Cache : public CacheBase
 
       void enable() { m_enabled = true; }
       void disable() { m_enabled = false; }
+
+      void print(); // Added by Kleber Kruger to test
 };
 
 template <class T>

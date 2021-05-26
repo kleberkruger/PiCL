@@ -42,7 +42,9 @@ namespace ParametricDramDirectoryMSI
       UInt64 system_eid = EpochManager::getGlobalSystemEID();
       UInt64 current_acs = (system_eid > m_acs_gap) ? (system_eid - m_acs_gap) : 0;
 
+      printf("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
       printf("Cntlr: [%lu] | [ACS %lu]\n", (UInt64)this, current_acs);
+      m_onchip_undo_buffer->print();
       std::queue<UndoEntry> log_entries = m_onchip_undo_buffer->getOldEntries(current_acs);
       while (!log_entries.empty())
       {
@@ -50,6 +52,8 @@ namespace ParametricDramDirectoryMSI
          sendDataToNVM(entry);
          log_entries.pop();
       }
+      m_onchip_undo_buffer->print();
+      printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
       printf("\n");
    }
 

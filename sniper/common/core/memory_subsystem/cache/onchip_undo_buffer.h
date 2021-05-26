@@ -65,6 +65,8 @@ public:
 
    std::queue<UndoEntry> getOldEntries(UInt64 acs_eid);
 
+   void print();
+
    String getName(void) const { return "OnChipUndoBuffer"; }
    MemComponent::component_t getMemComponent() const { return MemComponent::ONCHIP_UNDO_BUFFER; }
    UInt16 getNumEntries() const { return m_num_entries; }
