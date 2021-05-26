@@ -73,6 +73,7 @@ namespace ParametricDramDirectoryMSI
 
    void OnChipUndoBufferCntlr::sendDataToNVM(const UndoEntry &entry)
    {
+      printf("enviando para NVM %lu | %lu -> %lu\n", entry.getTag(), entry.getValidFromEID(), entry.getValidTillEID());
       // printf("Enviando UndoEntry [tag = %lu | valid_from_eid = %lu | valid_till_eid = %lu]\n", entry.getTag(), entry.getValidFromEID(), entry.getValidTillEID());
 
       // IntPtr address = m_master->m_cache->tagToAddress(block_info->getTag());

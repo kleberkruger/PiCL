@@ -1314,11 +1314,11 @@ CacheCntlr::accessCache(
             // Added by Kleber Kruger
             if (cache_block_info->getEpochID() != system_eid)
             {
-               printf("\n************************************************************\n");
-               m_master->m_cache->print();
+               // printf("\n************************************************************\n");
+               // m_master->m_cache->print();
                cache_block_info->setEpochID(system_eid);
-               m_master->m_cache->print();
-               printf("************************************************************\n\n");
+               // m_master->m_cache->print();
+               // printf("************************************************************\n\n");
             }
          }
 
@@ -1765,12 +1765,12 @@ assert(data_length==getCacheBlockSize());
       UInt64 system_eid = EpochManager::getGlobalSystemEID();
       if (cache_block_info->getEpochID() != system_eid)
       {
-         printf("\n************************************************************\n");
-         m_master->m_cache->print();
-
          if (m_master->m_cache->getName().compare("L3") == 0)
          {
+            // printf("\n************************************************************\n");
+            // m_master->m_cache->print();
             printf("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+            printf("L3 | Old EID -> New EID: [%lu -> %lu]\n", cache_block_info->getEpochID(), system_eid);
             m_onchip_undo_buffer_cntlr->getOnChipUndoBuffer()->print();
             m_onchip_undo_buffer_cntlr->getOnChipUndoBuffer()->createUndoEntry(system_eid, cache_block_info);
             m_onchip_undo_buffer_cntlr->getOnChipUndoBuffer()->print();
@@ -1778,8 +1778,8 @@ assert(data_length==getCacheBlockSize());
          }
 
          cache_block_info->setEpochID(system_eid);
-         m_master->m_cache->print();
-         printf("************************************************************\n\n");
+         // m_master->m_cache->print();
+         // printf("************************************************************\n\n");
       }
    }
 

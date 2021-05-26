@@ -1,13 +1,16 @@
 #include "onchip_undo_buffer.h"
 #include "stats.h"
 
+#include <algorithm>
+
 UndoEntry::UndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info) : m_tag(cache_block_info->getTag()), m_valid_from_eid(cache_block_info->getEpochID()), m_valid_till_eid(system_eid) {}
 
 UndoEntry::UndoEntry(const UndoEntry &orig) : m_tag(orig.m_tag), m_valid_from_eid(orig.m_valid_from_eid), m_valid_till_eid(orig.m_valid_till_eid) {}
 
 UndoEntry::~UndoEntry() {}
 
-OnChipUndoBuffer::OnChipUndoBuffer(UInt16 num_entries) : m_num_entries(num_entries), m_buffer() {
+OnChipUndoBuffer::OnChipUndoBuffer(UInt16 num_entries) : m_num_entries(num_entries), m_buffer()
+{
    m_buffer.reserve(num_entries);
 }
 
@@ -32,22 +35,14 @@ bool OnChipUndoBuffer::createUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_
 std::queue<UndoEntry> OnChipUndoBuffer::getOldEntries(UInt64 acs_eid)
 {
    std::queue<UndoEntry> old_entries;
-   // for (auto entry : m_buffer)
-   // {
-   //    if (entry.getValidFromEID() <= acs_eid) 
-   //       old_entries.push(entry);
-   // }
-   std::vector<std::vector<UndoEntry>::iterator> erases;
-   for (auto it = m_buffer.begin(); it != m_buffer.end(); ++it)
+   for (auto entry : m_buffer)
    {
-      if (it->getValidFromEID() <= acs_eid)
-      {
-         old_entries.push(*it);
-         erases.push_back(it);
-      }
+      if (entry.getValidFromEID() <= acs_eid)
+         old_entries.push(entry);
    }
-   for (auto it : erases)
-      m_buffer.erase(it);
+
+   m_buffer.erase(std::remove_if(m_buffer.begin(), m_buffer.end(), [&](UndoEntry e)
+                                 { return e.getValidFromEID() <= acs_eid; }), m_buffer.end());
 
    return old_entries;
 }
@@ -62,11 +57,11 @@ void OnChipUndoBuffer::print()
    printf("============================================================\n");
    printf("ON-CHIP UNDO BUFFER\n");
    printf("------------------------------------------------------------\n");
-   printf("               TAG    FROM    TILL\n");
-   for(std::size_t i = 0; i < m_buffer.size(); i++)
+   printf("                TAG    FROM    TILL\n");
+   for (std::size_t i = 0; i < m_buffer.size(); i++)
    {
       auto entry = m_buffer.at(i);
-      printf("%2lu: [%13lu | %5lu | %5lu]\n", i, entry.getTag(), entry.getValidFromEID(), entry.getValidTillEID());
+      printf("%3lu: [%13lu | %5lu | %5lu]\n", i, entry.getTag(), entry.getValidFromEID(), entry.getValidTillEID());
    }
    printf("============================================================\n");
 }
