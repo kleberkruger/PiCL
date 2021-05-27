@@ -1,6 +1,7 @@
 #include "onchip_undo_buffer.h"
 #include "stats.h"
 
+#include <deque>
 #include <algorithm>
 
 UndoEntry::UndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info) : m_tag(cache_block_info->getTag()), m_valid_from_eid(cache_block_info->getEpochID()), m_valid_till_eid(system_eid) {}
@@ -18,11 +19,9 @@ OnChipUndoBuffer::~OnChipUndoBuffer() {}
 
 bool OnChipUndoBuffer::createUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info)
 {
-   static UInt64 num_writes = 0;
    try
    {
       m_buffer.push_back(UndoEntry(system_eid, cache_block_info));
-      // printf("NumWrites [%lu]\n", num_writes++);
       return true;
    }
    catch (const char *msg)
@@ -45,6 +44,13 @@ std::queue<UndoEntry> OnChipUndoBuffer::getOldEntries(UInt64 acs_eid)
                                  { return e.getValidFromEID() <= acs_eid; }), m_buffer.end());
 
    return old_entries;
+}
+
+std::queue<UndoEntry> OnChipUndoBuffer::getAllEntries()
+{
+   std::queue<UndoEntry> entries(std::deque<UndoEntry>(m_buffer.begin(), m_buffer.end()));
+   m_buffer.clear();
+   return entries;
 }
 
 // void printf_on_center(char *str)

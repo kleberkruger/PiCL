@@ -64,6 +64,7 @@ public:
    bool createUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info);
 
    std::queue<UndoEntry> getOldEntries(UInt64 acs_eid);
+   std::queue<UndoEntry> getAllEntries();
 
    void print();
 

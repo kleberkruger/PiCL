@@ -352,6 +352,8 @@ namespace ParametricDramDirectoryMSI
 
          CacheCntlr* lastLevelCache(void);
 
+         bool m_picl_enabled;
+
       public:
 
          CacheCntlr(MemComponent::component_t mem_component,

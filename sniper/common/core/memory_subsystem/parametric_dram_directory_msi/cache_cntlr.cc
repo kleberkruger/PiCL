@@ -282,6 +282,9 @@ CacheCntlr::CacheCntlr(MemComponent::component_t mem_component,
       registerStatsMetric(name, core_id, "uncore-totaltime", &m_shmem_perf_totaltime);
       registerStatsMetric(name, core_id, "uncore-requests", &m_shmem_perf_numrequests);
    }
+
+   // Added by Kleber Kruger
+   m_picl_enabled = Sim()->getCfg()->getBool("picl/enabled");
 }
 
 CacheCntlr::~CacheCntlr()
@@ -1313,13 +1316,7 @@ CacheCntlr::accessCache(
                                                                                    getShmemPerfModel()->getElapsedTime(ShmemPerfModel::_USER_THREAD), update_replacement);
             // Added by Kleber Kruger
             if (cache_block_info->getEpochID() != system_eid)
-            {
-               // printf("\n************************************************************\n");
-               // m_master->m_cache->print();
                cache_block_info->setEpochID(system_eid);
-               // m_master->m_cache->print();
-               // printf("************************************************************\n\n");
-            }
          }
 
          // Write-through cache - Write the next level cache also
@@ -1765,21 +1762,10 @@ assert(data_length==getCacheBlockSize());
       UInt64 system_eid = EpochManager::getGlobalSystemEID();
       if (cache_block_info->getEpochID() != system_eid)
       {
-         if (m_master->m_cache->getName().compare("L3") == 0)
-         {
-            // printf("\n************************************************************\n");
-            // m_master->m_cache->print();
-            printf("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
-            printf("L3 | Old EID -> New EID: [%lu -> %lu]\n", cache_block_info->getEpochID(), system_eid);
-            m_onchip_undo_buffer_cntlr->getOnChipUndoBuffer()->print();
+         if (m_picl_enabled && m_master->m_cache->getName().compare("L3") == 0)
             m_onchip_undo_buffer_cntlr->getOnChipUndoBuffer()->createUndoEntry(system_eid, cache_block_info);
-            m_onchip_undo_buffer_cntlr->getOnChipUndoBuffer()->print();
-            printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
-         }
 
          cache_block_info->setEpochID(system_eid);
-         // m_master->m_cache->print();
-         // printf("************************************************************\n\n");
       }
    }
 
