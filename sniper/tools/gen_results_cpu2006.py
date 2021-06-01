@@ -12,9 +12,8 @@ class ExecutionData:
     self.num_mem_logs = num_mem_logs
 
   def __str__(self):
-    return '{} {} {} {}'.format(self.exec_time, self.num_mem_access, self.num_mem_writes, self.num_mem_logs)
+    return '[ ExecTime: {}, NumMemAccess: {}, NumMemWrites: {}, NumMemLogs: {} ]'.format(self.exec_time, self.num_mem_access, self.num_mem_writes, self.num_mem_logs)
     
-
 
 class App:
   def __init__(self, name, baseline, picl):
@@ -23,7 +22,7 @@ class App:
     self.picl = picl
   
   def __str__(self):
-    return 'Name: {}\n\tBaseline: {}\n\tPiCL: {}'.format(self.name, self.baseline, self.picl)
+    return 'Name: {}\tBaseline: {}\tPiCL: {}'.format(self.name, self.baseline, self.picl)
 
 
 def get_exec_time(res):
@@ -72,33 +71,141 @@ def get_results_from_resultsdir(name, resultsdir):
   return ExecutionData(get_exec_time(res), get_num_mem_access(res), get_num_mem_writes(res), get_num_mem_logs(res))
 
 
-apps = []
-for app_dir in os.listdir("."):
-  try:
-    app = App(app_dir, get_results_from_resultsdir(app_dir, app_dir + '/base'), get_results_from_resultsdir(app_dir, app_dir + '/pikl'))
-    apps.append(app)
-  except:
-    print('An exception occurred in application: {}'.format(app_dir))
+def get_exec_time_dataframe(apps):
+  exec_time_df = pd.DataFrame({
+    'Baseline': [ a.baseline.exec_time for a in apps ],
+    'PiCL': [ a.picl.exec_time for a in apps ],
+    'Overhead': [ 0 for a in apps ]
+  }, index = [ a.name for a in apps ])
 
-df = pd.DataFrame({
-  'Application': [ a.name for a in apps ],
-  'ExecTime:Baseline': [ a.baseline.exec_time for a in apps ],
-  'ExecTime:PiCL': [ a.picl.exec_time for a in apps ],
-  # 'ExecTime:Overhead': [ a.name for a in apps ],
-  'MemAccess:Baseline': [ a.baseline.num_mem_access for a in apps ],
-  'MemAccess:PiCL': [ a.picl.num_mem_access for a in apps ],
-  # 'MemAccess:Overhead': [ a.name for a in apps ],
-  'MemWrites:Baseline': [ a.baseline.num_mem_writes for a in apps ],
-  'MemWrites:PiCL': [ a.picl.num_mem_writes for a in apps ],
-  'MemWrites:Logging': [ a.picl.num_mem_logs for a in apps ],
-  # 'MemWrites:Perc Log': [ a.name for a in apps ],
-  # 'MemWrites:Overhead': [ a.name for a in apps ],
-})
-
-print(df)
-
-writer = pd.ExcelWriter('results_cpu2006.xlsx', engine='xlsxwriter')
-df.to_excel(writer, sheet_name='SPEC CPU2006', index=False)
-writer.save()
+  exec_time_df = exec_time_df.reindex(columns=['Baseline', 'PiCL', 'Overhead'])
+  return pd.concat({"Execution Time": exec_time_df}, axis=1)
 
 
+def get_mem_access_dataframe(apps):
+  mem_access_df = pd.DataFrame({
+    'Baseline': [ a.baseline.num_mem_access for a in apps ],
+    'PiCL': [ a.picl.num_mem_access for a in apps ],
+    'Overhead': [ 0 for a in apps ]
+  }, index = [ a.name for a in apps ])
+
+  mem_access_df = mem_access_df.reindex(columns=['Baseline', 'PiCL', 'Overhead'])
+  return pd.concat({"Memory Access": mem_access_df}, axis=1)
+
+
+def get_mem_writes_dataframe(apps):
+  mem_writes_df = pd.DataFrame({
+    'Baseline': [ a.baseline.num_mem_writes for a in apps ],
+    'PiCL': [ a.picl.num_mem_writes for a in apps ],
+    'Logging': [ a.picl.num_mem_logs for a in apps ],
+    '% Logging': [ 0 for a in apps ],
+    'Overhead': [ 0 for a in apps ]
+  }, index = [ a.name for a in apps ])
+
+  mem_writes_df = mem_writes_df.reindex(columns=['Baseline', 'PiCL', 'Logging', '% Logging', 'Overhead'])
+  return pd.concat({"Memory Writes": mem_writes_df}, axis=1)
+
+
+def generate_results_cpu2006(resultsrootdir = '.', output = '.', silent = False):
+  apps = []
+  for app_dir in os.listdir(resultsrootdir):
+    try:
+      if os.path.isdir(app_dir):
+        app = App(app_dir, get_results_from_resultsdir(app_dir, app_dir + '/base'), get_results_from_resultsdir(app_dir, app_dir + '/pikl'))
+        apps.append(app)
+    except:
+      print('An exception occurred in application: {}'.format(app_dir))
+
+  df = pd.concat([
+    get_exec_time_dataframe(apps), 
+    get_mem_access_dataframe(apps), 
+    get_mem_writes_dataframe(apps)], 
+    axis=1, names=['Application'])
+  
+  # df.index.name = 'Application'
+  df = df.sort_index()
+  if (not silent): 
+    print(df)
+  
+  # writer = pd.ExcelWriter('results_cpu2006.xlsx', engine='xlsxwriter')
+  with pd.ExcelWriter('{}/results_cpu2006.xlsx'.format(output), engine='xlsxwriter') as writer:
+    df.to_excel(writer, sheet_name='SPEC CPU2006')
+
+    startrow, rowssize = 4, df.shape[0]
+    worksheet = writer.sheets['SPEC CPU2006']
+    for r in range(startrow, rowssize + startrow):
+      worksheet.write_formula('D{}'.format(r), '(C{}-B{})/B{}'.format(r, r, r))
+      worksheet.write_formula('G{}'.format(r), '(F{}-E{})/E{}'.format(r, r, r))
+      worksheet.write_formula('K{}'.format(r), '(J{}/I{})'.format(r, r))
+      worksheet.write_formula('L{}'.format(r), 'I{}/(I{}-J{})'.format(r, r, r))
+
+
+generate_results_cpu2006()
+
+
+
+
+
+# Implementation by classes...
+
+# class ResultsReader:
+#   def __init__(self, resultsdir) -> None:
+#     res = sniper_lib.get_results(0, resultsdir, None)
+#     self.results = res['results']
+#     self.config = res['config']
+#     self.ncores = int(self.config['general/total_cores'])
+
+
+#   @classmethod
+#   def get_execution_time(self):
+#     if 'barrier.global_time_begin' in self.results:
+#       time0_begin = self.results['barrier.global_time_begin']
+#       time0_end = self.results['barrier.global_time_end']
+
+#     time0 = self.results['barrier.global_time'][0] if 'barrier.global_time' in self.results else time0_begin - time0_end
+    
+#     self.results['performance_model.elapsed_time_fixed'] = [ time0 for c in range(self.ncores)]
+#     self.results['performance_model.cycle_count_fixed'] = [
+#       self.results['performance_model.elapsed_time_fixed'][c] * self.results['fs_to_cycles_cores'][c]
+#       for c in range(self.ncores)
+#     ]
+#     return long(self.results['performance_model.cycle_count_fixed'][0])
+
+  
+#   @classmethod
+#   def get_memory_access(self):
+#     return map(sum, zip(self.results['dram.reads'], self.results['dram.writes']))[0]
+
+
+#   @classmethod
+#   def get_memory_writes(self):
+#     return self.results['dram.writes'][0]
+
+
+#   @classmethod
+#   def get_memory_logs(self):
+#     return self.results['onchip_undo_buffer.log_writes'][0]
+
+
+#   @classmethod
+#   def get_attributes(self):
+#     return ExecutionData(self.get_exec_time(), self.get_memory_access(), self.get_memory_writes(), self.get_memory_logs())
+
+
+# class ResultGenerator:
+#   def __init__(self, root_dir = '.', output_dir = '.', silent = False):
+#     self.root_dir = root_dir
+#     self.output_dir = output_dir
+#     self.silent = silent
+#     self.apps = []
+
+#   @classmethod
+#   def start(self):
+#     for app_dir in os.listdir(self.root_dir):
+#       try:
+#         if os.path.isdir(app_dir):
+#           app = App(app_dir, ResultsReader('{}/base'.format(app_dir)).get_attributes(), ResultsReader('{}/pikl'.format(app_dir)).get_attributes())
+#           self.apps.append(app)
+#       except:
+#         print('An exception occurred in application: {}'.format(app_dir))
+#
