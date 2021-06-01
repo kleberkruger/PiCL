@@ -106,7 +106,7 @@ def get_mem_writes_dataframe(apps):
   return pd.concat({"Memory Writes": mem_writes_df}, axis=1)
 
 
-def generate_results_cpu2006(resultsrootdir = '.', output = '.', silent = False):
+def generate_results_dataframe(resultsrootdir):
   apps = []
   for app_dir in os.listdir(resultsrootdir):
     try:
@@ -123,11 +123,10 @@ def generate_results_cpu2006(resultsrootdir = '.', output = '.', silent = False)
     axis=1, names=['Application'])
   
   # df.index.name = 'Application'
-  df = df.sort_index()
-  if (not silent): 
-    print(df)
-  
-  # writer = pd.ExcelWriter('results_cpu2006.xlsx', engine='xlsxwriter')
+  return df.sort_index()
+
+
+def generate_sheet(df, output):
   with pd.ExcelWriter('{}/results_cpu2006.xlsx'.format(output), engine='xlsxwriter') as writer:
     df.to_excel(writer, sheet_name='SPEC CPU2006')
 
@@ -138,6 +137,13 @@ def generate_results_cpu2006(resultsrootdir = '.', output = '.', silent = False)
       worksheet.write_formula('G{}'.format(r), '(F{}-E{})/E{}'.format(r, r, r))
       worksheet.write_formula('K{}'.format(r), '(J{}/I{})'.format(r, r))
       worksheet.write_formula('L{}'.format(r), 'I{}/(I{}-J{})'.format(r, r, r))
+
+
+def generate_results_cpu2006(resultsrootdir = '.', output = '.', silent = False):
+  df = generate_results_dataframe(resultsrootdir)
+  if (not silent): 
+    print(df)
+  generate_sheet(df, output)
 
 
 generate_results_cpu2006()
