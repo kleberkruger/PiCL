@@ -338,12 +338,11 @@ MemoryManager::MemoryManager(Core* core,
    m_core_id_master = getCore()->getId() - getCore()->getId() % cache_parameters[m_last_level_cache].shared_cores;
 
    // Added by Kleber Kruger (creating On-Chip Undo Buffer)
-   m_onchip_undo_buffer_cntlr = new OnChipUndoBufferCntlr( //getCore()->getId(),
-       m_core_id_master,
-       this,
-       m_tag_directory_home_lookup,
-       getCacheBlockSize(),
-       getShmemPerfModel());
+   m_onchip_undo_buffer_cntlr = new OnChipUndoBufferCntlr(m_core_id_master,
+                                                          this,
+                                                          m_tag_directory_home_lookup,
+                                                          getCacheBlockSize(),
+                                                          getShmemPerfModel());
 
    // Added by Kleber Kruger (set OnChipUndoBufferCntlr to CacheCntlrs)
    for (UInt32 i = MemComponent::FIRST_LEVEL_CACHE; i <= (UInt32)m_last_level_cache; ++i)

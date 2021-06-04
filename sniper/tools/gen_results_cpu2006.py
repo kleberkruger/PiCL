@@ -5,11 +5,12 @@ import pandas as pd
 
 
 class ExecutionData:
-  def __init__(self, exec_time, num_mem_access, num_mem_writes, num_mem_logs = 0):
+  def __init__(self, exec_time, num_mem_access, mem_bandwidth_utilization, num_mem_writes, num_mem_logs = 0):
     self.exec_time = exec_time
     self.num_mem_access = num_mem_access
     self.num_mem_writes = num_mem_writes
     self.num_mem_logs = num_mem_logs
+    self.mem_bandwidth_utilization = mem_bandwidth_utilization
 
   def __str__(self):
     return '[ ExecTime: {}, NumMemAccess: {}, NumMemWrites: {}, NumMemLogs: {} ]'.format(self.exec_time, self.num_mem_access, self.num_mem_writes, self.num_mem_logs)
@@ -65,10 +66,28 @@ def get_num_mem_logs(res):
   return results['onchip_undo_buffer.log_writes'][0]
 
 
+def get_avg_mem_bandwidth_utilization(res):
+  results = res['results']
+  config = res['config']
+  ncores = int(config['general/total_cores'])
+  
+  if 'barrier.global_time_begin' in results:
+    time0_begin = results['barrier.global_time_begin']
+    time0_end = results['barrier.global_time_end']
+  
+  if 'barrier.global_time' in results:
+    time0 = results['barrier.global_time'][0]
+  else:
+    time0 = time0_begin - time0_end
+
+  return map(lambda a: 100*a/time0 if time0 else float('inf'), results['dram-queue.total-time-used'])[0]
+
+
 
 def get_results_from_resultsdir(name, resultsdir):
   res = sniper_lib.get_results(0, resultsdir, None)
-  return ExecutionData(get_exec_time(res), get_num_mem_access(res), get_num_mem_writes(res), get_num_mem_logs(res))
+  return ExecutionData(get_exec_time(res), get_num_mem_access(res), get_avg_mem_bandwidth_utilization(res), 
+                       get_num_mem_writes(res), get_num_mem_logs(res))
 
 
 def get_exec_time_dataframe(apps):
@@ -91,6 +110,17 @@ def get_mem_access_dataframe(apps):
 
   mem_access_df = mem_access_df.reindex(columns=['Baseline', 'PiCL', 'Overhead'])
   return pd.concat({"Memory Access": mem_access_df}, axis=1)
+
+
+def get_mem_bandwidth_utilization_dataframe(apps):
+  mem_bandwidth_utilization_df = pd.DataFrame({
+    'Baseline': [ a.baseline.mem_bandwidth_utilization / 100.0 for a in apps ],
+    'PiCL': [ a.picl.mem_bandwidth_utilization / 100.0 for a in apps ],
+    'Overhead': [ 0 for a in apps ]
+  }, index = [ a.name for a in apps ])
+
+  mem_bandwidth_utilization_df = mem_bandwidth_utilization_df.reindex(columns=['Baseline', 'PiCL', 'Overhead'])
+  return pd.concat({"Average DRAM Bandwidth Utilization": mem_bandwidth_utilization_df}, axis=1)
 
 
 def get_mem_writes_dataframe(apps):
@@ -116,10 +146,8 @@ def generate_results_dataframe(resultsrootdir):
     except:
       print('An exception occurred in application: {}'.format(app_dir))
 
-  df = pd.concat([
-    get_exec_time_dataframe(apps), 
-    get_mem_access_dataframe(apps), 
-    get_mem_writes_dataframe(apps)], 
+  df = pd.concat([get_exec_time_dataframe(apps), get_mem_access_dataframe(apps), 
+    get_mem_bandwidth_utilization_dataframe(apps), get_mem_writes_dataframe(apps)], 
     axis=1, names=['Application'])
   
   # df.index.name = 'Application'
@@ -146,7 +174,8 @@ def generate_results_cpu2006(resultsrootdir = '.', output = '.', silent = False)
   generate_sheet(df, output)
 
 
-generate_results_cpu2006()
+if __name__ == '__main__': 
+  generate_results_cpu2006()
 
 
 

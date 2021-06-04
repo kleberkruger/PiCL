@@ -1,37 +1,41 @@
 #include "onchip_undo_buffer.h"
-#include "stats.h"
-
-#include <deque>
 #include <algorithm>
 
-UndoEntry::UndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info) : m_tag(cache_block_info->getTag()), m_valid_from_eid(cache_block_info->getEpochID()), m_valid_till_eid(system_eid) {}
+UndoEntry::UndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info)
+    : m_tag(cache_block_info->getTag()),
+      m_valid_from_eid(cache_block_info->getEpochID()),
+      m_valid_till_eid(system_eid) {}
 
-UndoEntry::UndoEntry(const UndoEntry &orig) : m_tag(orig.m_tag), m_valid_from_eid(orig.m_valid_from_eid), m_valid_till_eid(orig.m_valid_till_eid) {}
+UndoEntry::UndoEntry(const UndoEntry &orig)
+    : m_tag(orig.m_tag),
+      m_valid_from_eid(orig.m_valid_from_eid),
+      m_valid_till_eid(orig.m_valid_till_eid) {}
 
 UndoEntry::~UndoEntry() {}
 
-OnChipUndoBuffer::OnChipUndoBuffer(UInt16 num_entries) : m_num_entries(num_entries), m_buffer()
+OnChipUndoBuffer::OnChipUndoBuffer(UInt32 num_entries) : m_num_entries(num_entries), m_buffer()
 {
    m_buffer.reserve(num_entries);
 }
 
 OnChipUndoBuffer::~OnChipUndoBuffer() {}
 
-bool OnChipUndoBuffer::createUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info)
+bool OnChipUndoBuffer::insertUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info)
 {
-   try
+   if (m_buffer.size() < m_num_entries)
    {
       m_buffer.push_back(UndoEntry(system_eid, cache_block_info));
       return true;
    }
-   catch (const char *msg)
-   {
-      // code to handle exception
-      return false;
-   }
+   return false;
 }
 
-std::queue<UndoEntry> OnChipUndoBuffer::getOldEntries(UInt64 acs_eid)
+bool OnChipUndoBuffer::isFull()
+{
+   return m_buffer.size() == m_num_entries;
+}
+
+std::queue<UndoEntry> OnChipUndoBuffer::removeOldEntries(UInt64 acs_eid)
 {
    std::queue<UndoEntry> old_entries;
    for (auto entry : m_buffer)
@@ -39,24 +43,18 @@ std::queue<UndoEntry> OnChipUndoBuffer::getOldEntries(UInt64 acs_eid)
       if (entry.getValidFromEID() <= acs_eid)
          old_entries.push(entry);
    }
-
    m_buffer.erase(std::remove_if(m_buffer.begin(), m_buffer.end(), [&](UndoEntry e)
-                                 { return e.getValidFromEID() <= acs_eid; }), m_buffer.end());
-
+                                 { return e.getValidFromEID() <= acs_eid; }), 
+                                 m_buffer.end());
    return old_entries;
 }
 
-std::queue<UndoEntry> OnChipUndoBuffer::getAllEntries()
+std::queue<UndoEntry> OnChipUndoBuffer::removeAllEntries()
 {
-   std::queue<UndoEntry> entries(std::deque<UndoEntry>(m_buffer.begin(), m_buffer.end()));
+   std::queue<UndoEntry> all_entries(std::deque<UndoEntry>(m_buffer.begin(), m_buffer.end()));
    m_buffer.clear();
-   return entries;
+   return all_entries;
 }
-
-// void printf_on_center(char *str)
-// {
-//    printf("---%*s%*s---\n", 10 + strlen(str) / 2, str, 10 - strlen(str) / 2, "");
-// }
 
 void OnChipUndoBuffer::print()
 {

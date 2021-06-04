@@ -1763,7 +1763,7 @@ assert(data_length==getCacheBlockSize());
       if (cache_block_info->getEpochID() != system_eid)
       {
          if (m_picl_enabled && m_master->m_cache->getName().compare("L3") == 0)
-            m_onchip_undo_buffer_cntlr->getOnChipUndoBuffer()->createUndoEntry(system_eid, cache_block_info);
+            m_onchip_undo_buffer_cntlr->insertUndoEntry(system_eid, cache_block_info);
 
          cache_block_info->setEpochID(system_eid);
       }

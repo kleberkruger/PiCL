@@ -24,9 +24,10 @@ namespace ParametricDramDirectoryMSI
           MemoryManager *memory_manager,
           AddressHomeLookup *tag_directory_home_lookup,
           UInt32 cache_block_size,
-          ShmemPerfModel *shmem_perf_model,
-          UInt8 acs_gap = 3);
-      virtual ~OnChipUndoBufferCntlr();
+          ShmemPerfModel *shmem_perf_model);
+      ~OnChipUndoBufferCntlr();
+
+      void insertUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info);
 
       OnChipUndoBuffer *getOnChipUndoBuffer() { return m_onchip_undo_buffer; }
 
@@ -36,24 +37,24 @@ namespace ParametricDramDirectoryMSI
       struct
       {
          UInt64 log_writes;
-         UInt64 total_writes;
          UInt64 avg_log_writes_by_epoch;
-         UInt64 overhead_rate;
       } stats;
 
-      core_id_t m_core_id;
+      static const UInt32 DEFAULT_ACS_GAP = 3;
+      static const UInt32 DEFAULT_NUM_ENTRIES = 32;
+
       core_id_t m_core_id_master;
       MemoryManager *m_memory_manager;
       AddressHomeLookup *m_tag_directory_home_lookup;
-      UInt32 m_cache_block_size;
       ShmemPerf m_dummy_shmem_perf;
       ShmemPerfModel *m_shmem_perf_model;
       OnChipUndoBuffer *m_onchip_undo_buffer;
-      UInt8 m_acs_gap;
+      UInt32 m_cache_block_size;
+      UInt32 m_acs_gap;
 
       // Dram Directory Home Lookup
       core_id_t getHome(IntPtr address) { return m_tag_directory_home_lookup->getHome(address); }
-      
+
       MemoryManager *getMemoryManager() { return m_memory_manager; }
       ShmemPerfModel *getShmemPerfModel() { return m_shmem_perf_model; }
       
@@ -73,6 +74,8 @@ namespace ParametricDramDirectoryMSI
          return 0;
       }
       void persistLastEpochs(UInt64 eid);
+
+      void flush();
 
       void sendDataToNVM(const UndoEntry &undo_entry);
    };
