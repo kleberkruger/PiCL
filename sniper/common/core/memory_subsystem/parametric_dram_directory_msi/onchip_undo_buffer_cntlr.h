@@ -46,10 +46,10 @@ namespace ParametricDramDirectoryMSI
       core_id_t m_core_id_master;
       MemoryManager *m_memory_manager;
       AddressHomeLookup *m_tag_directory_home_lookup;
+      UInt32 m_cache_block_size;
       ShmemPerf m_dummy_shmem_perf;
       ShmemPerfModel *m_shmem_perf_model;
       OnChipUndoBuffer *m_onchip_undo_buffer;
-      UInt32 m_cache_block_size;
       UInt32 m_acs_gap;
 
       // Dram Directory Home Lookup
@@ -75,7 +75,7 @@ namespace ParametricDramDirectoryMSI
       }
       void persistLastEpochs(UInt64 eid);
 
-      void flush();
+      void flush(UInt64 eid = 0);
 
       void sendDataToNVM(const UndoEntry &undo_entry);
    };

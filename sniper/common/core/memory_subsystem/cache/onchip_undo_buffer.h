@@ -31,7 +31,7 @@ public:
    OnChipUndoBuffer(UInt32 num_entries = 0);
    virtual ~OnChipUndoBuffer();
 
-   bool insertUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info);
+   void insertUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info);
    bool isFull();
 
    std::queue<UndoEntry> removeOldEntries(UInt64 acs_eid);

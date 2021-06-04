@@ -9,6 +9,7 @@
 #include "simulator.h"
 #include "config.hpp"
 #include <cstring>
+#include <cmath>
 
 namespace ParametricDramDirectoryMSI
 {
@@ -20,12 +21,12 @@ namespace ParametricDramDirectoryMSI
        : m_core_id_master(core_id_master),
          m_memory_manager(memory_manager),
          m_tag_directory_home_lookup(tag_directory_home_lookup),
-         m_shmem_perf_model(shmem_perf_model),
-         m_cache_block_size(cache_block_size)
+         m_cache_block_size(cache_block_size),
+         m_shmem_perf_model(shmem_perf_model)
    {
       m_acs_gap = Sim()->getCfg()->hasKey("picl/acs_gap") ? Sim()->getCfg()->getInt("picl/acs_gap") : DEFAULT_ACS_GAP;
-      m_onchip_undo_buffer = new OnChipUndoBuffer(Sim()->getCfg()->hasKey("onchip_undo_buffer/num_entries")
-                                                      ? Sim()->getCfg()->getInt("onchip_undo_buffer/num_entries")
+      m_onchip_undo_buffer = new OnChipUndoBuffer(Sim()->getCfg()->hasKey("picl/onchip_undo_buffer/num_entries")
+                                                      ? Sim()->getCfg()->getInt("picl/onchip_undo_buffer/num_entries")
                                                       : DEFAULT_NUM_ENTRIES);
 
       Sim()->getHooksManager()->registerHook(HookType::HOOK_PERIODIC_INS, __async_cache_scan, (UInt64)this);
@@ -43,43 +44,48 @@ namespace ParametricDramDirectoryMSI
 
    void OnChipUndoBufferCntlr::insertUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info)
    {
-      if (m_onchip_undo_buffer->isFull())
+      UInt64 gap = system_eid > m_acs_gap ? m_acs_gap : system_eid;
+      while (m_onchip_undo_buffer->isFull())
       {
+         printf("\nBUFFER CHEIO\n");
+         m_onchip_undo_buffer->print();
+         printf("\nBUFFER AGORA | [%lu] [%lu] [%lu]\n", system_eid, gap, (system_eid - gap));
+         flush(system_eid - gap);
+         gap--;
+         m_onchip_undo_buffer->print();
       }
       m_onchip_undo_buffer->insertUndoEntry(system_eid, cache_block_info);
    }
 
-   void OnChipUndoBufferCntlr::flush()
+   void OnChipUndoBufferCntlr::flush(UInt64 persisted_eid)
    {
+      auto log_entries = persisted_eid == EpochManager::getGlobalSystemEID()
+                             ? m_onchip_undo_buffer->removeAllEntries()
+                             : m_onchip_undo_buffer->removeOldEntries(persisted_eid);
+
+      while (!log_entries.empty())
+      {
+         auto entry = log_entries.front();
+         sendDataToNVM(entry);
+         log_entries.pop();
+         stats.log_writes++;
+      }
+      EpochManager::setGlobalPersistedEID(persisted_eid);
    }
 
    // TODO: Escrever uma classe para registar as métricas de cada ACS (quantas escritas por época?)
    void OnChipUndoBufferCntlr::asyncCacheScan(UInt64 eid)
    {
       UInt64 system_eid = EpochManager::getGlobalSystemEID();
-      UInt64 current_acs = (system_eid > m_acs_gap) ? (system_eid - m_acs_gap) : 0;
-
-      std::queue<UndoEntry> log_entries = m_onchip_undo_buffer->removeOldEntries(current_acs);
-      while (!log_entries.empty())
-      {
-         auto entry = log_entries.front();
-         sendDataToNVM(entry);
-         log_entries.pop();
-      }
-      EpochManager::setGlobalPersistedEID(current_acs);
+      if (system_eid >= m_acs_gap)
+         flush(system_eid - m_acs_gap);
    }
 
    void OnChipUndoBufferCntlr::persistLastEpochs(UInt64 eid)
    {
-      // registerStatsMetric("dram", memory_manager->getCore()->getId(), "writes", &m_writes);
-      std::queue<UndoEntry> log_entries = m_onchip_undo_buffer->removeAllEntries();
-      while (!log_entries.empty())
-      {
-         auto entry = log_entries.front();
-         sendDataToNVM(entry);
-         log_entries.pop();
-      }
-      printf("PiCL Writes: (%lu)\n", stats.log_writes);
+      UInt64 system_eid = EpochManager::getGlobalSystemEID();
+      flush(system_eid);
+      stats.avg_log_writes_by_epoch = round(stats.log_writes / system_eid);
    }
 
    void OnChipUndoBufferCntlr::sendDataToNVM(const UndoEntry &entry)
@@ -91,7 +97,6 @@ namespace ParametricDramDirectoryMSI
                                   m_core_id_master, getHome(address), /* requester and receiver */
                                   address, data_buf, getCacheBlockSize(),
                                   HitWhere::UNKNOWN, &m_dummy_shmem_perf, ShmemPerfModel::_SIM_THREAD);
-      stats.log_writes++;
    }
 
 }

@@ -20,14 +20,10 @@ OnChipUndoBuffer::OnChipUndoBuffer(UInt32 num_entries) : m_num_entries(num_entri
 
 OnChipUndoBuffer::~OnChipUndoBuffer() {}
 
-bool OnChipUndoBuffer::insertUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info)
+void OnChipUndoBuffer::insertUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info)
 {
-   if (m_buffer.size() < m_num_entries)
-   {
-      m_buffer.push_back(UndoEntry(system_eid, cache_block_info));
-      return true;
-   }
-   return false;
+   assert(m_buffer.size() < m_num_entries);
+   m_buffer.push_back(UndoEntry(system_eid, cache_block_info));
 }
 
 bool OnChipUndoBuffer::isFull()
