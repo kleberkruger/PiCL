@@ -22,12 +22,12 @@ namespace ParametricDramDirectoryMSI
          m_memory_manager(memory_manager),
          m_tag_directory_home_lookup(tag_directory_home_lookup),
          m_cache_block_size(cache_block_size),
-         m_shmem_perf_model(shmem_perf_model)
+         m_shmem_perf_model(shmem_perf_model),
+         m_acs_gap(Sim()->getCfg()->hasKey("picl/acs_gap")
+                       ? Sim()->getCfg()->getInt("picl/acs_gap")
+                       : DEFAULT_ACS_GAP)
    {
-      m_acs_gap = Sim()->getCfg()->hasKey("picl/acs_gap") ? Sim()->getCfg()->getInt("picl/acs_gap") : DEFAULT_ACS_GAP;
-      m_onchip_undo_buffer = new OnChipUndoBuffer(Sim()->getCfg()->hasKey("picl/onchip_undo_buffer/num_entries")
-                                                      ? Sim()->getCfg()->getInt("picl/onchip_undo_buffer/num_entries")
-                                                      : DEFAULT_NUM_ENTRIES);
+      m_onchip_undo_buffer = new OnChipUndoBuffer(getNumEntries());
 
       Sim()->getHooksManager()->registerHook(HookType::HOOK_PERIODIC_INS, __async_cache_scan, (UInt64)this);
       Sim()->getHooksManager()->registerHook(HookType::HOOK_APPLICATION_EXIT, __persist_last_epochs, (UInt64)this);
@@ -35,6 +35,7 @@ namespace ParametricDramDirectoryMSI
       memset(&stats, 0, sizeof(stats));
       registerStatsMetric("onchip_undo_buffer", m_core_id_master, "log_writes", &stats.log_writes);
       registerStatsMetric("onchip_undo_buffer", m_core_id_master, "avg_log_writes_by_epoch", &stats.avg_log_writes_by_epoch);
+      registerStatsMetric("onchip_undo_buffer", m_core_id_master, "overflow", &stats.overflow);
    }
 
    OnChipUndoBufferCntlr::~OnChipUndoBufferCntlr()
@@ -42,18 +43,28 @@ namespace ParametricDramDirectoryMSI
       delete m_onchip_undo_buffer;
    }
 
+   UInt32 OnChipUndoBufferCntlr::getNumEntries()
+   {
+      if (!Sim()->getCfg()->hasKey("picl/onchip_undo_buffer/num_entries"))
+         return DEFAULT_NUM_ENTRIES;
+
+      UInt32 num_entries = Sim()->getCfg()->getInt("picl/onchip_undo_buffer/num_entries");
+      return num_entries > 0 ? num_entries : UINT32_MAX;
+   }
+
    void OnChipUndoBufferCntlr::insertUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info)
    {
-      UInt64 gap = system_eid > m_acs_gap ? m_acs_gap : system_eid;
+      UInt32 gap = system_eid > m_acs_gap ? m_acs_gap : system_eid;
+      bool overflow = false;
+      
       while (m_onchip_undo_buffer->isFull())
       {
-         printf("\nBUFFER CHEIO\n");
-         m_onchip_undo_buffer->print();
-         printf("\nBUFFER AGORA | [%lu] [%lu] [%lu]\n", system_eid, gap, (system_eid - gap));
-         flush(system_eid - gap);
-         gap--;
-         m_onchip_undo_buffer->print();
+         overflow = true;
+         flush(system_eid - gap--);
       }
+      if (overflow)
+         stats.overflow++;
+
       m_onchip_undo_buffer->insertUndoEntry(system_eid, cache_block_info);
    }
 
@@ -86,6 +97,8 @@ namespace ParametricDramDirectoryMSI
       UInt64 system_eid = EpochManager::getGlobalSystemEID();
       flush(system_eid);
       stats.avg_log_writes_by_epoch = round(stats.log_writes / system_eid);
+      
+      printf("[PiCL] Log writes: %lu\n[PiCL] Log writes (AVG by Epoch ID): %lu\n", stats.log_writes, stats.avg_log_writes_by_epoch);
    }
 
    void OnChipUndoBufferCntlr::sendDataToNVM(const UndoEntry &entry)

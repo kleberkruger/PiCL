@@ -44,7 +44,7 @@ public:
    void print();
 
 private:
-   const UInt32 m_num_entries;
+   const UInt32 m_num_entries;      // Set 0 to an ilimited buffer
    std::vector<UndoEntry> m_buffer;
 };
 

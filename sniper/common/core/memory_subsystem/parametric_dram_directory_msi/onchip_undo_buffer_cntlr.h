@@ -38,6 +38,7 @@ namespace ParametricDramDirectoryMSI
       {
          UInt64 log_writes;
          UInt64 avg_log_writes_by_epoch;
+         UInt64 overflow;
       } stats;
 
       static const UInt32 DEFAULT_ACS_GAP = 3;
@@ -55,11 +56,16 @@ namespace ParametricDramDirectoryMSI
       // Dram Directory Home Lookup
       core_id_t getHome(IntPtr address) { return m_tag_directory_home_lookup->getHome(address); }
 
+      UInt32 getCacheBlockSize() { return m_cache_block_size; }
+      IntPtr getLogAddress() { return UINT32_MAX; }
       MemoryManager *getMemoryManager() { return m_memory_manager; }
       ShmemPerfModel *getShmemPerfModel() { return m_shmem_perf_model; }
-      
-      UInt32 getCacheBlockSize() { return m_cache_block_size; }
-      IntPtr getLogAddress() { return 0xFFFFFFFF ; }
+
+      UInt32 getNumEntries();
+
+      void flush(UInt64 eid = 0);
+
+      void sendDataToNVM(const UndoEntry &undo_entry);
 
       static SInt64 __async_cache_scan(UInt64 arg, UInt64 val)
       {
@@ -74,10 +80,6 @@ namespace ParametricDramDirectoryMSI
          return 0;
       }
       void persistLastEpochs(UInt64 eid);
-
-      void flush(UInt64 eid = 0);
-
-      void sendDataToNVM(const UndoEntry &undo_entry);
    };
 
 }

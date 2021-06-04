@@ -15,7 +15,8 @@ UndoEntry::~UndoEntry() {}
 
 OnChipUndoBuffer::OnChipUndoBuffer(UInt32 num_entries) : m_num_entries(num_entries), m_buffer()
 {
-   m_buffer.reserve(num_entries);
+   if (num_entries <= 1024)
+      m_buffer.reserve(num_entries);
 }
 
 OnChipUndoBuffer::~OnChipUndoBuffer() {}
