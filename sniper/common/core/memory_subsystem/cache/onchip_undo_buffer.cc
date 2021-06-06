@@ -21,29 +21,37 @@ OnChipUndoBuffer::OnChipUndoBuffer(UInt32 num_entries) : m_num_entries(num_entri
 
 OnChipUndoBuffer::~OnChipUndoBuffer() {}
 
+bool OnChipUndoBuffer::isFull()
+{
+   return m_buffer.size() == m_num_entries;
+}
+
 void OnChipUndoBuffer::insertUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info)
 {
    assert(m_buffer.size() < m_num_entries);
    m_buffer.push_back(UndoEntry(system_eid, cache_block_info));
 }
 
-bool OnChipUndoBuffer::isFull()
-{
-   return m_buffer.size() == m_num_entries;
-}
-
 std::queue<UndoEntry> OnChipUndoBuffer::removeOldEntries(UInt64 acs_eid)
 {
    std::queue<UndoEntry> old_entries;
-   for (auto entry : m_buffer)
+   for (auto &entry : m_buffer)
    {
       if (entry.getValidFromEID() <= acs_eid)
-         old_entries.push(entry);
+         old_entries.push(std::move(entry));
    }
-   m_buffer.erase(std::remove_if(m_buffer.begin(), m_buffer.end(), [&](UndoEntry e)
+   m_buffer.erase(std::remove_if(m_buffer.begin(), m_buffer.end(), [&](const UndoEntry e)
                                  { return e.getValidFromEID() <= acs_eid; }), 
                                  m_buffer.end());
    return old_entries;
+}
+
+std::queue<UndoEntry> OnChipUndoBuffer::removeOldEntries()
+{
+   auto min = std::min_element(m_buffer.begin(), m_buffer.end(),
+                               [](const UndoEntry &a, const UndoEntry &b)
+                               { return a.getValidFromEID() < b.getValidFromEID(); });
+   return removeOldEntries(min->getValidFromEID());
 }
 
 std::queue<UndoEntry> OnChipUndoBuffer::removeAllEntries()

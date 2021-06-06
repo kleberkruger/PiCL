@@ -54,17 +54,18 @@ namespace ParametricDramDirectoryMSI
 
    void OnChipUndoBufferCntlr::insertUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info)
    {
-      UInt32 gap = system_eid > m_acs_gap ? m_acs_gap : system_eid;
-      bool overflow = false;
-      
-      while (m_onchip_undo_buffer->isFull())
+      if (m_onchip_undo_buffer->isFull())
       {
-         overflow = true;
-         flush(system_eid - gap--);
-      }
-      if (overflow)
+         printf("\n\nOverflow detectado\n");
+         m_onchip_undo_buffer->print();
          stats.overflow++;
-
+         UInt32 gap = system_eid > m_acs_gap ? m_acs_gap : system_eid;
+         do {
+            flush(system_eid - gap--);
+         } while (m_onchip_undo_buffer->isFull());
+         printf("\n\nOverflow RESOLVIDO [%lu] [%lu]\n", system_eid, system_eid - (gap + 1));
+         m_onchip_undo_buffer->print();
+      }
       m_onchip_undo_buffer->insertUndoEntry(system_eid, cache_block_info);
    }
 

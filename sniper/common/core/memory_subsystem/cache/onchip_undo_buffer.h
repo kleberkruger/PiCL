@@ -31,14 +31,14 @@ public:
    OnChipUndoBuffer(UInt32 num_entries = 0);
    virtual ~OnChipUndoBuffer();
 
-   void insertUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info);
    bool isFull();
-
+   void insertUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info);
    std::queue<UndoEntry> removeOldEntries(UInt64 acs_eid);
+   std::queue<UndoEntry> removeOldEntries();
    std::queue<UndoEntry> removeAllEntries();
 
    UInt32 getNumEntries() const { return m_num_entries; }
-   String getName(void) const { return "OnChipUndoBuffer"; }
+   String getName(void) const { return "On-Chip Undo Buffer"; }
    MemComponent::component_t getMemComponent() const { return MemComponent::ONCHIP_UNDO_BUFFER; }
 
    void print();
