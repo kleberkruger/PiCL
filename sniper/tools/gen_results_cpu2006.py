@@ -5,11 +5,12 @@ import pandas as pd
 
 
 class ExecutionData:
-  def __init__(self, exec_time, num_mem_access, mem_bandwidth_utilization, num_mem_writes, num_mem_logs = 0):
+  def __init__(self, exec_time, num_mem_access, mem_bandwidth_utilization, num_mem_writes, num_mem_logs = 0, num_buffer_overflow = 0):
     self.exec_time = exec_time
     self.num_mem_access = num_mem_access
     self.num_mem_writes = num_mem_writes
     self.num_mem_logs = num_mem_logs
+    self.num_buffer_overflow = num_buffer_overflow
     self.mem_bandwidth_utilization = mem_bandwidth_utilization
 
   def __str__(self):
@@ -66,6 +67,11 @@ def get_num_mem_logs(res):
   return results['onchip_undo_buffer.log_writes'][0]
 
 
+def get_num_buffer_overflow(res):
+  results = res['results']
+  return results['onchip_undo_buffer.overflow'][0]
+
+
 def get_avg_mem_bandwidth_utilization(res):
   results = res['results']
   config = res['config']
@@ -87,7 +93,7 @@ def get_avg_mem_bandwidth_utilization(res):
 def get_results_from_resultsdir(name, resultsdir):
   res = sniper_lib.get_results(0, resultsdir, None)
   return ExecutionData(get_exec_time(res), get_num_mem_access(res), get_avg_mem_bandwidth_utilization(res), 
-                       get_num_mem_writes(res), get_num_mem_logs(res))
+                       get_num_mem_writes(res), get_num_mem_logs(res), get_num_buffer_overflow(res))
 
 
 def get_exec_time_dataframe(apps):
@@ -116,10 +122,10 @@ def get_mem_bandwidth_utilization_dataframe(apps):
   mem_bandwidth_utilization_df = pd.DataFrame({
     'Baseline': [ a.baseline.mem_bandwidth_utilization / 100.0 for a in apps ],
     'PiCL': [ a.picl.mem_bandwidth_utilization / 100.0 for a in apps ],
-    'Overhead': [ 0 for a in apps ]
+    'Delta': [ 0 for a in apps ]
   }, index = [ a.name for a in apps ])
 
-  mem_bandwidth_utilization_df = mem_bandwidth_utilization_df.reindex(columns=['Baseline', 'PiCL', 'Overhead'])
+  mem_bandwidth_utilization_df = mem_bandwidth_utilization_df.reindex(columns=['Baseline', 'PiCL', 'Delta'])
   return pd.concat({"Average DRAM Bandwidth Utilization": mem_bandwidth_utilization_df}, axis=1)
 
 
@@ -128,11 +134,12 @@ def get_mem_writes_dataframe(apps):
     'Baseline': [ a.baseline.num_mem_writes for a in apps ],
     'PiCL': [ a.picl.num_mem_writes for a in apps ],
     'Logging': [ a.picl.num_mem_logs for a in apps ],
+    'Buffer Overflow': [ a.picl.num_buffer_overflow for a in apps ],
     '% Logging': [ 0 for a in apps ],
     'Overhead': [ 0 for a in apps ]
   }, index = [ a.name for a in apps ])
 
-  mem_writes_df = mem_writes_df.reindex(columns=['Baseline', 'PiCL', 'Logging', '% Logging', 'Overhead'])
+  mem_writes_df = mem_writes_df.reindex(columns=['Baseline', 'PiCL', 'Logging', 'Buffer Overflow', '% Logging', 'Overhead'])
   return pd.concat({"Memory Writes": mem_writes_df}, axis=1)
 
 
@@ -141,7 +148,7 @@ def generate_results_dataframe(resultsrootdir):
   for app_dir in os.listdir(resultsrootdir):
     try:
       if os.path.isdir(app_dir):
-        app = App(app_dir, get_results_from_resultsdir(app_dir, app_dir + '/base'), get_results_from_resultsdir(app_dir, app_dir + '/pikl'))
+        app = App(app_dir, get_results_from_resultsdir(app_dir, app_dir + '/base/v2'), get_results_from_resultsdir(app_dir, app_dir + '/pikl/v2'))
         apps.append(app)
     except:
       print('An exception occurred in application: {}'.format(app_dir))
@@ -163,8 +170,9 @@ def generate_sheet(df, output):
     for r in range(startrow, rowssize + startrow):
       worksheet.write_formula('D{}'.format(r), '(C{}-B{})/B{}'.format(r, r, r))
       worksheet.write_formula('G{}'.format(r), '(F{}-E{})/E{}'.format(r, r, r))
-      worksheet.write_formula('K{}'.format(r), '(J{}/I{})'.format(r, r))
-      worksheet.write_formula('L{}'.format(r), 'I{}/(I{}-J{})'.format(r, r, r))
+      worksheet.write_formula('J{}'.format(r), 'I{}-H{}'.format(r, r))
+      worksheet.write_formula('O{}'.format(r), 'M{}/L{}'.format(r, r))
+      worksheet.write_formula('P{}'.format(r), 'L{}/(L{}-K{})'.format(r, r, r))
 
 
 def generate_results_cpu2006(resultsrootdir = '.', output = '.', silent = False):

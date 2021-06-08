@@ -285,6 +285,17 @@ CacheCntlr::CacheCntlr(MemComponent::component_t mem_component,
 
    // Added by Kleber Kruger
    m_picl_enabled = Sim()->getCfg()->getBool("picl/enabled");
+   
+   // // Added by Kleber Kruger to ACS on LLC
+   // if (m_picl_enabled)
+   // {
+   //    m_acs_gap = Sim()->getCfg()->hasKey("picl/acs_gap") ? Sim()->getCfg()->getInt("picl/acs_gap") : 3;
+   //    if (m_picl_enabled && m_master->m_cache->getName().compare("L3") == 0)
+   //    {
+   //       Sim()->getHooksManager()->registerHook(HookType::HOOK_PERIODIC_INS, __async_cache_scan, (UInt64)this);
+   //       // Sim()->getHooksManager()->registerHook(HookType::HOOK_APPLICATION_EXIT, __persist_last_epochs, (UInt64)this);
+   //    }
+   // }
 }
 
 CacheCntlr::~CacheCntlr()
@@ -2336,6 +2347,49 @@ Semaphore*
 CacheCntlr::getNetworkThreadSemaphore()
 {
    return m_network_thread_sem;
+}
+
+/**
+ * PiCL: Asynchronous Cache Scanning (ACS).
+ * Added by Kleber Kruger
+ */
+void CacheCntlr::asyncCacheScan(UInt64 system_eid)
+{  
+   if (system_eid >= m_acs_gap)
+   {
+      m_onchip_undo_buffer_cntlr->flush();
+      UInt64 persisted_eid = system_eid - m_acs_gap;
+      for (UInt32 i = 0; i < m_master->m_cache->getNumSets(); i++)
+      {
+         for (UInt32 j = 0; j < m_master->m_cache->getAssociativity(); j++)
+         {
+            CacheBlockInfo *cache_block_info = m_master->m_cache->peekBlock(i, j);
+            if (cache_block_info->getEpochID() <= persisted_eid && cache_block_info->getCState() == CacheState::MODIFIED)
+            {
+               if (!m_onchip_undo_buffer_cntlr->isPresent(cache_block_info))
+                  flushCacheBlock(cache_block_info);
+            }
+         }
+      }
+   }
+}
+
+/**
+ * Flush the cache block to DRAM.
+ * Added by Kleber Kruger
+ */
+void CacheCntlr::flushCacheBlock(CacheBlockInfo *block_info)
+{
+   IntPtr address = m_master->m_cache->tagToAddress(block_info->getTag());
+   Byte data_buf[getCacheBlockSize()];
+
+   updateCacheBlock(address, CacheState::SHARED, Transition::COHERENCY, data_buf, ShmemPerfModel::_SIM_THREAD);
+
+   getMemoryManager()->sendMsg(PrL1PrL2DramDirectoryMSI::ShmemMsg::CP_REP,
+                               MemComponent::LAST_LEVEL_CACHE, MemComponent::TAG_DIR,
+                               m_core_id_master, getHome(address), /* requester and receiver */
+                               address, data_buf, getCacheBlockSize(),
+                               HitWhere::UNKNOWN, &m_dummy_shmem_perf, ShmemPerfModel::_SIM_THREAD);
 }
 
 }

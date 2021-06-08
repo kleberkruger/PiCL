@@ -29,6 +29,10 @@ namespace ParametricDramDirectoryMSI
 
       void insertUndoEntry(UInt64 system_eid, CacheBlockInfo *cache_block_info);
 
+      // to new version...
+      bool isPresent(CacheBlockInfo *cache_block_info) { return false; }
+      void flush();
+
       OnChipUndoBuffer *getOnChipUndoBuffer() { return m_onchip_undo_buffer; }
 
       friend class MemoryManager;
@@ -63,7 +67,7 @@ namespace ParametricDramDirectoryMSI
 
       UInt32 getNumEntries();
 
-      void flush(UInt64 eid = 0);
+      void flush(UInt64 eid);
 
       void sendDataToNVM(const UndoEntry &undo_entry);
 

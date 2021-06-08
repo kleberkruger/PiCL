@@ -173,7 +173,6 @@ DramDirectoryCntlr::handleMsgFromL2Cache(core_id_t sender, ShmemMsg* shmem_msg)
       // Added by Kleber Kruger
       case ShmemMsg::CP_REP:
          MYLOG("CP REP<%u @ %lx", sender, address);
-         // printf("CP REP<%u @ %lu\n", sender, address);
          processCpRepFromL2Cache(sender, shmem_msg);
          break;
 
@@ -1203,9 +1202,8 @@ DramDirectoryCntlr::processWbRepFromL2Cache(core_id_t sender, ShmemMsg* shmem_ms
    MYLOG("End @ %lx", address);
 }
 
-/*
+/**
  * Process checkpoint message. Send data to DRAM.
-
  * Added by Kleber Kruger
  */
 void DramDirectoryCntlr::processCpRepFromL2Cache(core_id_t sender, ShmemMsg *shmem_msg)
@@ -1218,15 +1216,14 @@ void DramDirectoryCntlr::processCpRepFromL2Cache(core_id_t sender, ShmemMsg *shm
    DirectoryEntry *directory_entry = m_dram_directory_cache->getDirectoryEntry(address);
    assert(directory_entry);
 
-   // DirectoryBlockInfo *directory_block_info = directory_entry->getDirectoryBlockInfo();
+   DirectoryBlockInfo *directory_block_info = directory_entry->getDirectoryBlockInfo();
 
-   //assert(directory_block_info->getDState() == DirectoryState::MODIFIED);
    assert(directory_entry->hasSharer(sender));
 
-   // directory_entry->setOwner(INVALID_CORE_ID);
-   // directory_block_info->setDState(DirectoryState::SHARED);
+   directory_entry->setOwner(INVALID_CORE_ID);
+   directory_block_info->setDState(DirectoryState::SHARED);
 
-   // printf("Checkpointing cache line: [%lu]\n", address);
+   // printf("Sending Address = [%lu]\n", address);
    sendDataToDram(address, shmem_msg->getRequester(), shmem_msg->getDataBuf(), now);
 }
 

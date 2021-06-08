@@ -37,11 +37,11 @@ std::queue<UndoEntry> OnChipUndoBuffer::removeOldEntries(UInt64 acs_eid)
    std::queue<UndoEntry> old_entries;
    for (auto &entry : m_buffer)
    {
-      if (entry.getValidFromEID() <= acs_eid)
+      if (entry.getValidTillEID() <= acs_eid)
          old_entries.push(std::move(entry));
    }
    m_buffer.erase(std::remove_if(m_buffer.begin(), m_buffer.end(), [&](const UndoEntry e)
-                                 { return e.getValidFromEID() <= acs_eid; }), 
+                                 { return e.getValidTillEID() <= acs_eid; }),
                                  m_buffer.end());
    return old_entries;
 }
@@ -50,8 +50,8 @@ std::queue<UndoEntry> OnChipUndoBuffer::removeOldEntries()
 {
    auto min = std::min_element(m_buffer.begin(), m_buffer.end(),
                                [](const UndoEntry &a, const UndoEntry &b)
-                               { return a.getValidFromEID() < b.getValidFromEID(); });
-   return removeOldEntries(min->getValidFromEID());
+                               { return a.getValidTillEID() < b.getValidTillEID(); });
+   return removeOldEntries(min->getValidTillEID());
 }
 
 std::queue<UndoEntry> OnChipUndoBuffer::removeAllEntries()

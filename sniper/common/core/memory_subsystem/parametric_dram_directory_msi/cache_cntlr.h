@@ -17,7 +17,8 @@
 #include "stats.h"
 #include "subsecond_time.h"
 #include "shmem_perf.h"
-#include "onchip_undo_buffer_cntlr.h" // Added by Kleber Kruger
+#include "onchip_undo_buffer_cntlr.h"  // Added by Kleber Kruger
+#include "epoch_manager.h"             // Added by Kleber Kruger
 
 #include "boost/tuple/tuple.hpp"
 
@@ -279,6 +280,9 @@ namespace ParametricDramDirectoryMSI
 
          ShmemPerfModel* m_shmem_perf_model;
 
+         bool m_picl_enabled; // Added by Kleber Kruger
+         UInt32 m_acs_gap;    // Added by Kleber Kruger
+
          // Core-interfacing stuff
          void accessCache(
                Core::mem_op_t mem_op_type,
@@ -352,7 +356,15 @@ namespace ParametricDramDirectoryMSI
 
          CacheCntlr* lastLevelCache(void);
 
-         bool m_picl_enabled;
+         // Added by Kleber Kruger
+         static SInt64 __async_cache_scan(UInt64 arg, UInt64 val)
+         {
+            ((CacheCntlr *)arg)->asyncCacheScan(EpochManager::getGlobalSystemEID());
+            return 0;
+         }
+
+         void asyncCacheScan(UInt64 eid);                  // Added by Kleber Kruger
+         void flushCacheBlock(CacheBlockInfo *block_info); // Added by Kleber Kruger
 
       public:
 

@@ -56,17 +56,20 @@ namespace ParametricDramDirectoryMSI
    {
       if (m_onchip_undo_buffer->isFull())
       {
-         printf("\n\nOverflow detectado\n");
-         m_onchip_undo_buffer->print();
          stats.overflow++;
          UInt32 gap = system_eid > m_acs_gap ? m_acs_gap : system_eid;
          do {
             flush(system_eid - gap--);
          } while (m_onchip_undo_buffer->isFull());
-         printf("\n\nOverflow RESOLVIDO [%lu] [%lu]\n", system_eid, system_eid - (gap + 1));
-         m_onchip_undo_buffer->print();
       }
       m_onchip_undo_buffer->insertUndoEntry(system_eid, cache_block_info);
+
+      // if (m_onchip_undo_buffer->isFull())
+      // {
+      //    stats.overflow++;
+      //    flush();
+      // }
+      // m_onchip_undo_buffer->insertUndoEntry(system_eid, cache_block_info);
    }
 
    void OnChipUndoBufferCntlr::flush(UInt64 persisted_eid)
@@ -83,6 +86,18 @@ namespace ParametricDramDirectoryMSI
          stats.log_writes++;
       }
       EpochManager::setGlobalPersistedEID(persisted_eid);
+   }
+
+   void OnChipUndoBufferCntlr::flush()
+   {
+      auto log_entries = m_onchip_undo_buffer->removeAllEntries();
+      while (!log_entries.empty())
+      {
+         auto entry = log_entries.front();
+         sendDataToNVM(entry);
+         log_entries.pop();
+         stats.log_writes++;
+      }
    }
 
    // TODO: Escrever uma classe para registar as métricas de cada ACS (quantas escritas por época?)
