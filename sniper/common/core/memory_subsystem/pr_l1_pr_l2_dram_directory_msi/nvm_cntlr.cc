@@ -53,7 +53,8 @@ NvmCntlr::getDataFromDram(IntPtr address, core_id_t requester, Byte* data_buf, S
       memcpy((void*) data_buf, (void*) m_data_map[address], getCacheBlockSize());
    }
 
-   SubsecondTime dram_access_latency = DramCntlr::runDramPerfModel(requester, now, address, READ, perf); 
+   SubsecondTime dram_access_latency = DramCntlr::runDramPerfModel(requester, now, address, READ, perf);
+   printf("LOAD | dram_latency = %lu\n", dram_access_latency.getNS());
 
    ++m_reads;
    #ifdef ENABLE_DRAM_ACCESS_COUNT
@@ -81,7 +82,7 @@ NvmCntlr::putDataToDram(IntPtr address, core_id_t requester, Byte* data_buf, Sub
    }
 
    SubsecondTime dram_access_latency = DramCntlr::runDramPerfModel(requester, now, address, WRITE, &m_dummy_shmem_perf);
-   // printf("STORE %lu | (%lu) dram_latency = %lu\n", address, EpochManager::getGlobalSystemEID(), dram_access_latency.getNS());
+   printf("STORE | dram_latency = %lu\n", dram_access_latency.getNS());
 
    ++m_writes;
    #ifdef ENABLE_DRAM_ACCESS_COUNT
